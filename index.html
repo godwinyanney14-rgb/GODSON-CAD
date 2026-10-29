@@ -1,0 +1,2709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GODSON Aircraft CAD Design Studio</title>
+<link rel="icon" type="image/svg+xml"
+  href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230d1117'/%3E%3Cpath d='M32 8 L38 27 L56 32 L38 37 L32 56 L26 37 L8 32 L26 27 Z' fill='%2322d3ee'/%3E%3Ccircle cx='32' cy='32' r='4.5' fill='%230d1117'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0d1117; --panel:#141a22; --panel2:#1a222c; --line:#243040;
+  --txt:#c9d6e4; --dim:#7b8ea3; --acc:#3b82f6; --acc2:#22d3ee;
+  --ok:#22c55e; --warn:#f59e0b; --err:#ef4444;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  font:12px/1.45 "Segoe UI",Inter,system-ui,sans-serif;
+  background:var(--bg); color:var(--txt); overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font:inherit;color:inherit}
+button{background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+  padding:4px 9px;cursor:pointer;transition:.12s}
+button:hover{background:#22303f;border-color:#3a4c63}
+button:active{transform:translateY(1px)}
+button.primary{background:var(--acc);border-color:#2f6fd0;color:#fff;font-weight:600}
+button.primary:hover{background:#4b8ef7}
+button.sm{padding:2px 6px;font-size:11px}
+input[type=text],input[type=number],select{
+  background:#0b1016;border:1px solid var(--line);border-radius:4px;padding:4px 6px;width:100%}
+input[type=range]{width:100%;accent-color:var(--acc);height:16px}
+
+/* ---------- LAYOUT ---------- */
+#app{display:grid;grid-template-rows:46px 1fr 132px;height:100vh}
+#topbar{display:flex;align-items:center;gap:6px;padding:0 10px;
+  background:linear-gradient(180deg,#18202a,#12181f);border-bottom:1px solid var(--line);z-index:30}
+.brand{font-weight:800;letter-spacing:1.5px;font-size:13px;color:#fff;margin-right:8px}
+.brand span{color:var(--acc2)}
+.menu{display:flex;gap:2px}
+.menu .m{position:relative}
+.menu .m>button{background:transparent;border:1px solid transparent;padding:5px 10px}
+.menu .m>button:hover{background:#1e2833;border-color:var(--line)}
+.dropdown{position:absolute;top:100%;left:0;min-width:240px;background:#131a22;
+  border:1px solid var(--line);border-radius:6px;padding:5px;display:none;
+  box-shadow:0 12px 32px #0009;z-index:40}
+.m.open .dropdown{display:block}
+.dropdown button{display:block;width:100%;text-align:left;background:transparent;
+  border:none;padding:6px 9px;border-radius:4px}
+.dropdown button:hover{background:#22303f}
+.dropdown hr{border:none;border-top:1px solid var(--line);margin:4px 2px}
+.spacer{flex:1}
+.pill{font-size:10px;padding:2px 7px;border-radius:20px;border:1px solid var(--line);
+  color:var(--dim);background:#0b1016}
+.pill.live{color:var(--ok);border-color:#1c4a2c;background:#0d1c13}
+
+main{display:grid;grid-template-columns:278px 1fr 330px;min-height:0}
+aside{background:var(--panel);overflow-y:auto;min-height:0}
+#left{border-right:1px solid var(--line)}
+#right{border-left:1px solid var(--line)}
+aside::-webkit-scrollbar,#console::-webkit-scrollbar{width:9px}
+aside::-webkit-scrollbar-thumb,#console::-webkit-scrollbar-thumb{background:#26313f;border-radius:5px}
+
+.sec{padding:8px 10px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 7px;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;
+  color:var(--dim);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border:none;border-radius:0;background:transparent;padding:8px 4px;
+  color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.5px}
+.tabs button.active{color:#fff;background:#1a222c;box-shadow:inset 0 -2px 0 var(--acc)}
+
+/* library */
+.ac-card{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+  padding:8px;margin-bottom:7px;cursor:pointer;transition:.13s}
+.ac-card:hover{border-color:var(--acc);background:#1d2836}
+.ac-card .nm{font-weight:700;font-size:12px;color:#e8f0f9}
+.ac-card .mf{font-size:10.5px;color:var(--dim);margin-bottom:4px}
+.ac-card .sp{font-size:10px;color:#8fa3b8;display:flex;flex-wrap:wrap;gap:2px 8px}
+.ac-card .sp b{color:var(--acc2);font-weight:600}
+.badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:3px;
+  background:#0f2a1c;color:#4ade80;border:1px solid #1c4a2c}
+
+/* tree */
+.tree-row{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:4px;
+  cursor:pointer;font-size:11.5px}
+.tree-row:hover{background:#1e2833}
+.tree-row.sel{background:#1d3a63;box-shadow:inset 2px 0 0 var(--acc)}
+.tree-row .eye{width:14px;text-align:center;opacity:.75;font-size:11px}
+.tree-row .eye.off{opacity:.25}
+.tree-row .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* viewport */
+#viewport{position:relative;background:#0a0e13;min-height:0;overflow:hidden}
+#c{display:block;width:100%;height:100%}
+#hud{position:absolute;inset:0;pointer-events:none}
+#hud>*{pointer-events:auto}
+.vtoolbar{position:absolute;top:10px;left:10px;display:flex;gap:4px;flex-wrap:wrap;max-width:calc(100% - 20px)}
+.vtoolbar button{background:#131a22cc;backdrop-filter:blur(6px);border:1px solid var(--line);
+  padding:4px 8px;font-size:11px}
+.vtoolbar button.on{background:#1d3a63;border-color:var(--acc);color:#fff}
+#viewlabel{position:absolute;bottom:10px;left:12px;font-size:10.5px;color:var(--dim);
+  background:#0a0e13cc;padding:3px 8px;border-radius:4px;border:1px solid var(--line)}
+#measurebar{position:absolute;top:10px;right:10px;background:#131a22dd;border:1px solid var(--line);
+  border-radius:6px;padding:7px 10px;font-size:11px;display:none}
+#loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:#0a0e13cc;font-size:13px;letter-spacing:1px;color:var(--acc2)}
+
+/* right panel */
+.prop{display:grid;grid-template-columns:1fr auto;gap:4px;padding:2px 0;font-size:11px}
+.prop span:first-child{color:var(--dim)}
+.prop span:last-child{color:#dbe6f2;font-weight:600}
+.param{margin-bottom:7px}
+.param>label{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-bottom:2px}
+.prow{display:flex;gap:5px;align-items:center}
+.prow input[type=range]{flex:1;min-width:0}
+.prow input.pnum{width:66px;flex:none;text-align:right;padding:2px 5px;font-size:11px;
+  font-variant-numeric:tabular-nums}
+.punit{width:14px;flex:none;color:var(--dim);font-size:10px;text-align:center}
+.row{display:flex;gap:5px;flex-wrap:wrap}
+
+/* console */
+#console{background:#0b1016;border-top:1px solid var(--line);overflow-y:auto;
+  font:11px/1.5 "SFMono-Regular",Consolas,monospace;padding:6px 10px}
+#console div{white-space:pre-wrap;word-break:break-word}
+#console .t{color:#4b5f75}
+#console .ok{color:var(--ok)}
+#console .warn{color:var(--warn)}
+#console .err{color:var(--err)}
+#console .info{color:var(--acc2)}
+
+/* home overlay */
+#home{position:fixed;inset:0;z-index:100;background:
+  radial-gradient(1000px 600px at 20% 0%,#152233 0%,#0a0e13 60%);
+  overflow-y:auto;padding:34px 40px}
+#home h1{font-size:30px;margin:0 0 4px;letter-spacing:-.5px}
+#home h1 span{color:var(--acc2)}
+#home .sub{color:var(--dim);margin-bottom:22px;max-width:760px;line-height:1.6}
+#home .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;
+  max-width:1400px}
+#home .card{background:#131a22;border:1px solid var(--line);border-radius:9px;padding:12px;
+  cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+#home .card:hover{border-color:var(--acc);transform:translateY(-2px);box-shadow:0 8px 24px #0007}
+#home .card h4{margin:0 0 2px;font-size:13px}
+#home .card .m{color:var(--dim);font-size:10.5px;margin-bottom:8px}
+#home .card .rowline{display:flex;justify-content:space-between;font-size:10.5px;
+  color:#93a7bc;padding:1px 0;border-top:1px dashed #1d2733}
+#home .card .rowline b{color:#dbe6f2}
+#home .topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+@media(max-width:1100px){
+  main{grid-template-columns:220px 1fr 290px}
+}
+@media(max-width:860px){
+  main{grid-template-columns:1fr}
+  #left,#right{position:absolute;top:46px;bottom:132px;width:270px;z-index:20;display:none}
+  #left.show,#right.show{display:block}
+  #left{left:0}#right{right:0}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header id="topbar">
+    <div class="brand">GODSON<span>CAD</span></div>
+    <nav class="menu" id="menu">
+      <div class="m" data-menu="file"><button>File</button>
+        <div class="dropdown">
+          <button data-act="new">New Project</button>
+          <button data-act="save">Save Project (local)</button>
+          <button data-act="open">Open Saved Project…</button>
+          <hr>
+          <button data-act="home">Model Library Home</button>
+        </div>
+      </div>
+      <div class="m" data-menu="edit"><button>Edit</button>
+        <div class="dropdown">
+          <button data-act="undo">Undo</button>
+          <button data-act="redo">Redo</button>
+          <button data-act="reset">Reset Parameters</button>
+          <hr>
+          <button data-act="duplicate">Duplicate Selected Component</button>
+          <button data-act="delete">Delete Selected Component</button>
+        </div>
+      </div>
+      <div class="m" data-menu="view"><button>View</button>
+        <div class="dropdown">
+          <button data-act="v-iso">Isometric</button>
+          <button data-act="v-front">Front</button>
+          <button data-act="v-top">Top</button>
+          <button data-act="v-left">Left</button>
+          <button data-act="v-rear">Rear</button>
+          <button data-act="fit">Zoom Fit</button>
+          <hr>
+          <button data-act="ortho">Toggle Orthographic / Perspective</button>
+          <button data-act="grid">Toggle Grid</button>
+          <button data-act="fullscreen">Fullscreen</button>
+        </div>
+      </div>
+      <div class="m" data-menu="tools"><button>Tools</button>
+        <div class="dropdown">
+          <button data-act="measure">Measure Tool</button>
+          <button data-act="section">Section View</button>
+          <button data-act="edges">Toggle Edge Highlight</button>
+          <hr>
+          <button data-act="drawing">Technical Drawing Sheet</button>
+        </div>
+      </div>
+      <div class="m" data-menu="export"><button>Export</button>
+        <div class="dropdown">
+          <button data-act="exp-step">Export STEP (B-rep)</button>
+          <button data-act="exp-stl">Export STL</button>
+          <button data-act="exp-svg">Export Drawing SVG</button>
+          <button data-act="exp-dxf">Export Drawing DXF</button>
+        </div>
+      </div>
+      <div class="m" data-menu="help"><button>Help</button>
+        <div class="dropdown">
+          <button data-act="about">About / Accuracy Notice</button>
+        </div>
+      </div>
+    </nav>
+    <div class="spacer"></div>
+    <span class="pill live" id="statusPill">READY</span>
+    <span class="pill" id="tripPill">— tris</span>
+    <button class="sm" id="btnHome">Library</button>
+  </header>
+
+  <main>
+    <aside id="left">
+      <div class="tabs">
+        <button class="active" data-tab="lib">AIRCRAFT LIBRARY</button>
+        <button data-tab="tree">MODEL TREE</button>
+      </div>
+      <div id="tab-lib">
+        <div class="sec">
+          <input type="text" id="search" placeholder="Search aircraft, manufacturer, category…">
+        </div>
+        <div class="sec" id="libList" style="border-bottom:none"></div>
+      </div>
+      <div id="tab-tree" style="display:none">
+        <div class="sec">
+          <h3>Assembly</h3>
+          <div id="tree"></div>
+        </div>
+        <div class="sec">
+          <h3>Component Actions</h3>
+          <div class="row">
+            <button class="sm" data-cact="show">Show All</button>
+            <button class="sm" data-cact="hide">Hide All</button>
+            <button class="sm" data-cact="isolate">Isolate</button>
+            <button class="sm" data-cact="rename">Rename</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section id="viewport">
+      <canvas id="c"></canvas>
+      <div id="hud">
+        <div class="vtoolbar">
+          <button data-act="v-iso">ISO</button>
+          <button data-act="v-front">FRONT</button>
+          <button data-act="v-rear">REAR</button>
+          <button data-act="v-top">TOP</button>
+          <button data-act="v-bottom">BOTTOM</button>
+          <button data-act="v-left">LEFT</button>
+          <button data-act="v-right">RIGHT</button>
+          <button data-act="fit">FIT</button>
+          <button data-act="solid" class="shd on">SOLID</button>
+          <button data-act="shaded" class="shd">SHADED</button>
+          <button data-act="wire" class="shd">WIRE</button>
+          <button data-act="tech" class="shd">TECH</button>
+        </div>
+        <div id="measurebar">
+          <b>MEASURE</b> — click two points on the model
+          <div id="mres" style="margin-top:4px;color:var(--acc2)">—</div>
+        </div>
+        <div id="viewlabel">Perspective · Solid</div>
+      </div>
+      <div id="loading">GENERATING GEOMETRY…</div>
+    </section>
+
+    <aside id="right">
+      <div class="sec">
+        <h3>Model Information</h3>
+        <div id="info"></div>
+      </div>
+      <div class="sec">
+        <h3>Selected Component</h3>
+        <div id="selinfo" style="color:var(--dim)">Nothing selected</div>
+      </div>
+
+      <div class="sec">
+        <h3>Shape Style</h3>
+        <div class="param">
+          <label>Nose profile</label>
+          <select id="noseStyle">
+            <option value="boeing">Boeing 787-style (ogive)</option>
+            <option value="airbus">Airbus A380-style (blunt)</option>
+            <option value="concorde">Concorde (needle + droop)</option>
+            <option value="cessna">Cessna (rounded)</option>
+            <option value="pointed">Pointed</option>
+            <option value="blunt">Blunt / cargo</option>
+          </select>
+        </div>
+        <div class="param">
+          <label>Wing planform</label>
+          <select id="wingStyle">
+            <option value="raked">Swept + raked tips (787)</option>
+            <option value="swept">Swept trapezoid</option>
+            <option value="winglet">Swept + winglets</option>
+            <option value="delta">Delta / ogival (Concorde)</option>
+            <option value="elliptical">Elliptical</option>
+            <option value="straight">Straight / rectangular (GA)</option>
+          </select>
+        </div>
+        <div class="param" style="margin-bottom:0">
+          <label>Windows</label>
+          <select id="windowMode">
+            <option value="holes">Cut as holes in skin</option>
+            <option value="glass">Recessed glass panels</option>
+            <option value="none">No windows</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>Parametric Parameters <button class="sm" id="btnResetP">Reset</button></h3>
+        <div id="params"></div>
+      </div>
+
+      <div class="sec">
+        <h3>Display</h3>
+        <div class="param">
+          <label style="display:flex;gap:7px;align-items:center;cursor:pointer;margin-bottom:8px">
+            <input type="checkbox" id="ghostSkin"
+                   style="width:auto;accent-color:var(--acc);flex:none">
+            <span style="color:var(--txt)">Ghost outer skin — reveal wall thickness</span>
+          </label>
+        </div>
+        <div class="param">
+          <label>Section plane X <b id="secVal">off</b></label>
+          <input type="range" id="secSlider" min="-40" max="40" step="0.5" value="0">
+        </div>
+        <div class="param" style="margin-bottom:0">
+          <label>Mesh quality (rebuild) <b id="qVal">1.0×</b></label>
+          <input type="range" id="qSlider" min="0.5" max="2" step="0.1" value="1">
+        </div>
+      </div>
+
+      <div class="sec" style="border-bottom:none">
+        <h3>Export</h3>
+        <div class="param">
+          <label>Target</label>
+          <select id="expTarget">
+            <option value="all">Complete aircraft assembly</option>
+            <option value="sel">Selected component only</option>
+          </select>
+        </div>
+        <div class="param">
+          <label>Units</label>
+          <select id="expUnits">
+            <option value="mm">Millimetres (mm)</option>
+            <option value="in">Inches (in)</option>
+          </select>
+        </div>
+        <div class="param">
+          <label>STEP schema</label>
+          <select id="expSchema">
+            <option value="ap242">AP242</option>
+            <option value="ap214">AP214</option>
+            <option value="ap203">AP203</option>
+          </select>
+        </div>
+        <div class="param">
+          <label>STL format</label>
+          <select id="stlFormat">
+            <option value="binary">Binary STL</option>
+            <option value="ascii">ASCII STL</option>
+          </select>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <button class="primary" data-act="exp-step" style="flex:1">Export STEP</button>
+          <button class="primary" data-act="exp-stl" style="flex:1">Export STL</button>
+        </div>
+        <div class="row" style="margin-top:5px">
+          <button data-act="drawing" style="flex:1">Drawing Sheet</button>
+        </div>
+        <p style="font-size:10px;color:var(--dim);margin:8px 0 0;line-height:1.5">
+          STEP export writes faceted B-rep solids (MANIFOLD_SOLID_BREP) in millimetres or inches.
+          STL export is generated from the live tessellated geometry.
+        </p>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="console"></footer>
+</div>
+
+<!-- ================= HOME / LIBRARY ================= -->
+<div id="home">
+  <div class="topbar">
+    <div>
+      <h1>GODSON <span>Aircraft CAD Design Studio</span></h1>
+      <div class="sub">
+        A browser-based aircraft design workspace: browse the reference library, open a model,
+        inspect its assembly tree, type exact dimensions into the parameter fields,
+        choose nose and wing planform styles, cut real window holes through the fuselage skin,
+        and export genuine <b>STEP</b> (faceted B-rep) and <b>STL</b> files.
+        Models are reference-based or approximate reconstructions from published dimensions —
+        they are not manufacturer proprietary CAD data and are not airworthiness-validated.
+      </div>
+    </div>
+    <div class="row">
+      <button class="primary" id="startDesigning" style="padding:10px 20px;font-size:13px">
+        Start Designing →
+      </button>
+    </div>
+  </div>
+  <div class="grid" id="homeGrid"></div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+}}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/* =========================================================
+   0. UTILITIES
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const D2R = Math.PI / 180;
+const lerp = THREE.MathUtils.lerp;
+const clamp = THREE.MathUtils.clamp;
+const rad = d => d * D2R;
+
+function download(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 8000);
+}
+function log(msg, cls=''){
+  const el = document.createElement('div');
+  const t = new Date().toLocaleTimeString([], {hour12:false});
+  el.innerHTML = `<span class="t">[${t}]</span> <span class="${cls}">${msg}</span>`;
+  $('#console').appendChild(el);
+  $('#console').scrollTop = $('#console').scrollHeight;
+}
+function status(txt){ $('#statusPill').textContent = txt; }
+
+/* =========================================================
+   1. AIRCRAFT REFERENCE LIBRARY
+   ========================================================= */
+const DEFAULTS = {
+  kind:'fixed',
+  length:40, fuselageRadius:2, fuselageThickness:0.06,
+  noseLength:0.14, tailLength:0.20,
+  noseStyle:'boeing', wingStyle:'raked', windowMode:'holes',
+  wingSpan:40, wingSweep:28, wingRootChord:8, wingTipChord:2,
+  wingThickness:0.12, wingDihedral:5, wingRootX:0, wingY:0,
+  hStabSpan:14, hStabChord:4, hStabX:-16, hStabSweep:30,
+  vStabHeight:6, vStabChord:6, vStabX:-16, vStabSweep:35,
+  engineCount:2, engineDiameter:2, engineLength:4, engineDrop:1.8,
+  engineSpan:0.4, engineMount:'wing',
+  windowCount:30, deck:false,
+  gearTrack:8, gearHeight:3,
+  rotorDiameter:0, droneArm:0
+};
+
+const DB = [
+  {
+    id:'b787', name:'Boeing 787-9 Dreamliner', mfr:'Boeing', cat:'Passenger · Widebody',
+    accuracy:'Reference-based parametric model',
+    source:'Boeing public specifications',
+    specs:{span:'60.12 m', length:'62.81 m', height:'17.02 m', fus:'5.77 m dia.',
+      engines:'2 × GEnx-1B / Trent 1000', wing:'Swept + raked tips', gear:'Tricycle',
+      pax:'296–420'},
+    params:{...DEFAULTS,
+      noseStyle:'boeing', wingStyle:'raked', fuselageThickness:0.065,
+      length:62.8, fuselageRadius:2.885, noseLength:0.13, tailLength:0.20,
+      wingSpan:60.1, wingSweep:32.2, wingRootChord:11.5, wingTipChord:2.0,
+      wingThickness:0.12, wingDihedral:5, wingRootX:2.5,
+      hStabSpan:20, hStabChord:5.5, hStabX:-24, hStabSweep:33,
+      vStabHeight:9.0, vStabChord:8.0, vStabX:-24, vStabSweep:40,
+      engineCount:2, engineDiameter:2.9, engineLength:6.0, engineDrop:2.6, engineSpan:0.40,
+      windowCount:44, deck:false, gearTrack:11, gearHeight:4.0}
+  },
+  {
+    id:'a380', name:'Airbus A380-800', mfr:'Airbus', cat:'Passenger · Double deck',
+    accuracy:'Reference-based parametric model',
+    source:'Airbus public specifications',
+    specs:{span:'79.75 m', length:'72.72 m', height:'24.09 m', fus:'7.14 m dia.',
+      engines:'4 × Trent 900 / GP7200', wing:'Swept, large area', gear:'Tricycle + body gear',
+      pax:'525 (3-class)'},
+    params:{...DEFAULTS,
+      noseStyle:'airbus', wingStyle:'swept', fuselageThickness:0.075,
+      length:72.7, fuselageRadius:3.57, noseLength:0.11, tailLength:0.19,
+      wingSpan:79.75, wingSweep:33.5, wingRootChord:14, wingTipChord:2.5,
+      wingThickness:0.13, wingDihedral:5, wingRootX:3,
+      hStabSpan:30, hStabChord:7, hStabX:-28, hStabSweep:34,
+      vStabHeight:11, vStabChord:9, vStabX:-28, vStabSweep:40,
+      engineCount:4, engineDiameter:3.0, engineLength:6.5, engineDrop:3.0, engineSpan:0.38,
+      windowCount:50, deck:true, gearTrack:14, gearHeight:4.6}
+  },
+  {
+    id:'b747', name:'Boeing 747-8', mfr:'Boeing', cat:'Passenger · Widebody',
+    accuracy:'Reference-based parametric model', source:'Boeing public specifications',
+    specs:{span:'68.4 m', length:'76.3 m', height:'19.4 m', fus:'6.5 m dia.',
+      engines:'4 × GEnx-2B67', wing:'Swept', gear:'Tricycle', pax:'410 (3-class)'},
+    params:{...DEFAULTS,
+      noseStyle:'boeing', wingStyle:'raked', fuselageThickness:0.07,
+      length:76.3, fuselageRadius:3.2, noseLength:0.12, tailLength:0.19,
+      wingSpan:68.4, wingSweep:37.5, wingRootChord:13, wingTipChord:2.2,
+      wingThickness:0.12, wingDihedral:6, wingRootX:2,
+      hStabSpan:22, hStabChord:6, hStabX:-30, hStabSweep:35,
+      vStabHeight:9.5, vStabChord:8.5, vStabX:-30, vStabSweep:42,
+      engineCount:4, engineDiameter:2.7, engineLength:5.5, engineDrop:2.6, engineSpan:0.36,
+      windowCount:48, deck:true, gearTrack:12, gearHeight:4.3}
+  },
+  {
+    id:'b777', name:'Boeing 777-300ER', mfr:'Boeing', cat:'Passenger · Widebody',
+    accuracy:'Reference-based parametric model', source:'Boeing public specifications',
+    specs:{span:'64.8 m', length:'73.9 m', height:'18.5 m', fus:'6.2 m dia.',
+      engines:'2 × GE90-115B', wing:'Swept, raked tips', gear:'Tricycle', pax:'396 (3-class)'},
+    params:{...DEFAULTS,
+      noseStyle:'boeing', wingStyle:'raked', fuselageThickness:0.07,
+      length:73.9, fuselageRadius:3.1, noseLength:0.12, tailLength:0.19,
+      wingSpan:64.8, wingSweep:31.6, wingRootChord:12.5, wingTipChord:2.1,
+      wingThickness:0.12, wingDihedral:5, wingRootX:2.5,
+      hStabSpan:21, hStabChord:6, hStabX:-28, hStabSweep:33,
+      vStabHeight:9.5, vStabChord:8.5, vStabX:-28, vStabSweep:40,
+      engineCount:2, engineDiameter:3.5, engineLength:7.0, engineDrop:2.8, engineSpan:0.40,
+      windowCount:46, deck:false, gearTrack:12.5, gearHeight:4.2}
+  },
+  {
+    id:'b737', name:'Boeing 737-800', mfr:'Boeing', cat:'Passenger · Narrowbody',
+    accuracy:'Reference-based parametric model', source:'Boeing public specifications',
+    specs:{span:'35.8 m', length:'39.5 m', height:'12.5 m', fus:'3.76 m dia.',
+      engines:'2 × CFM56-7B', wing:'Swept', gear:'Tricycle', pax:'162–189'},
+    params:{...DEFAULTS,
+      noseStyle:'boeing', wingStyle:'winglet', fuselageThickness:0.045,
+      length:39.5, fuselageRadius:1.88, noseLength:0.14, tailLength:0.20,
+      wingSpan:35.8, wingSweep:25, wingRootChord:7.5, wingTipChord:1.6,
+      wingThickness:0.12, wingDihedral:6, wingRootX:1.5,
+      hStabSpan:14, hStabChord:3.6, hStabX:-15, hStabSweep:30,
+      vStabHeight:6.2, vStabChord:5.5, vStabX:-15, vStabSweep:38,
+      engineCount:2, engineDiameter:1.6, engineLength:3.4, engineDrop:1.4, engineSpan:0.36,
+      windowCount:30, deck:false, gearTrack:5.7, gearHeight:2.4}
+  },
+  {
+    id:'a320', name:'Airbus A320neo', mfr:'Airbus', cat:'Passenger · Narrowbody',
+    accuracy:'Reference-based parametric model', source:'Airbus public specifications',
+    specs:{span:'35.8 m', length:'37.6 m', height:'11.8 m', fus:'3.95 m dia.',
+      engines:'2 × LEAP-1A / PW1100G', wing:'Swept, sharklets', gear:'Tricycle', pax:'165–195'},
+    params:{...DEFAULTS,
+      noseStyle:'airbus', wingStyle:'winglet', fuselageThickness:0.045,
+      length:37.6, fuselageRadius:1.98, noseLength:0.14, tailLength:0.20,
+      wingSpan:35.8, wingSweep:25, wingRootChord:7.2, wingTipChord:1.6,
+      wingThickness:0.12, wingDihedral:5, wingRootX:1.2,
+      hStabSpan:13, hStabChord:3.5, hStabX:-14, hStabSweep:30,
+      vStabHeight:6.0, vStabChord:5.2, vStabX:-14, vStabSweep:38,
+      engineCount:2, engineDiameter:1.7, engineLength:3.6, engineDrop:1.5, engineSpan:0.36,
+      windowCount:28, deck:false, gearTrack:5.9, gearHeight:2.4}
+  },
+  {
+    id:'a350', name:'Airbus A350-900', mfr:'Airbus', cat:'Passenger · Widebody',
+    accuracy:'Reference-based parametric model', source:'Airbus public specifications',
+    specs:{span:'64.75 m', length:'66.8 m', height:'17.05 m', fus:'5.96 m dia.',
+      engines:'2 × Trent XWB', wing:'Swept, blended tips', gear:'Tricycle', pax:'300–350'},
+    params:{...DEFAULTS,
+      noseStyle:'airbus', wingStyle:'raked', fuselageThickness:0.06,
+      length:66.8, fuselageRadius:2.96, noseLength:0.13, tailLength:0.20,
+      wingSpan:64.75, wingSweep:31.9, wingRootChord:12, wingTipChord:2.0,
+      wingThickness:0.12, wingDihedral:5, wingRootX:2.4,
+      hStabSpan:20, hStabChord:5.5, hStabX:-26, hStabSweep:33,
+      vStabHeight:9.2, vStabChord:8, vStabX:-26, vStabSweep:40,
+      engineCount:2, engineDiameter:3.0, engineLength:6.2, engineDrop:2.6, engineSpan:0.40,
+      windowCount:44, deck:false, gearTrack:11, gearHeight:4.1}
+  },
+  {
+    id:'a330', name:'Airbus A330-300', mfr:'Airbus', cat:'Passenger · Widebody',
+    accuracy:'Reference-based parametric model', source:'Airbus public specifications',
+    specs:{span:'60.3 m', length:'63.7 m', height:'16.8 m', fus:'5.64 m dia.',
+      engines:'2 × Trent 700 / CF6', wing:'Swept', gear:'Tricycle', pax:'277–440'},
+    params:{...DEFAULTS,
+      noseStyle:'airbus', wingStyle:'swept', fuselageThickness:0.06,
+      length:63.7, fuselageRadius:2.815, noseLength:0.13, tailLength:0.20,
+      wingSpan:60.3, wingSweep:30, wingRootChord:11, wingTipChord:2.0,
+      wingThickness:0.12, wingDihedral:5, wingRootX:2.2,
+      hStabSpan:19, hStabChord:5.2, hStabX:-24, hStabSweep:32,
+      vStabHeight:8.8, vStabChord:7.6, vStabX:-24, vStabSweep:40,
+      engineCount:2, engineDiameter:2.6, engineLength:5.4, engineDrop:2.3, engineSpan:0.40,
+      windowCount:42, deck:false, gearTrack:10.7, gearHeight:4.0}
+  },
+  {
+    id:'a340', name:'Airbus A340-600', mfr:'Airbus', cat:'Passenger · Widebody · 4-engine',
+    accuracy:'Reference-based parametric model', source:'Airbus public specifications',
+    specs:{span:'63.45 m', length:'75.36 m', height:'17.93 m', fus:'5.64 m dia.',
+      engines:'4 × Trent 500', wing:'Swept', gear:'Tricycle + centre gear', pax:'380 (3-class)'},
+    params:{...DEFAULTS,
+      noseStyle:'airbus', wingStyle:'swept', fuselageThickness:0.06,
+      length:75.4, fuselageRadius:2.815, noseLength:0.12, tailLength:0.19,
+      wingSpan:63.45, wingSweep:31.1, wingRootChord:11.5, wingTipChord:2.0,
+      wingThickness:0.12, wingDihedral:5, wingRootX:2.4,
+      hStabSpan:19, hStabChord:5.4, hStabX:-28, hStabSweep:32,
+      vStabHeight:9.0, vStabChord:7.8, vStabX:-28, vStabSweep:40,
+      engineCount:4, engineDiameter:2.2, engineLength:4.8, engineDrop:2.2, engineSpan:0.36,
+      windowCount:46, deck:false, gearTrack:10.7, gearHeight:4.1}
+  },
+  {
+    id:'concorde', name:'Aérospatiale/BAC Concorde', mfr:'Aérospatiale / BAC', cat:'Supersonic transport',
+    accuracy:'Approximate parametric model (delta planform)', source:'Published dimensions',
+    specs:{span:'25.6 m', length:'61.66 m', height:'12.2 m', fus:'2.88 m dia.',
+      engines:'4 × Olympus 593', wing:'Ogival delta', gear:'Tricycle', pax:'92–128'},
+    params:{...DEFAULTS,
+      noseStyle:'concorde', wingStyle:'delta', fuselageThickness:0.025,
+      length:61.7, fuselageRadius:1.44, noseLength:0.24, tailLength:0.18,
+      wingSpan:25.6, wingSweep:60, wingRootChord:24, wingTipChord:1.6,
+      wingThickness:0.05, wingDihedral:0, wingRootX:0,
+      hStabSpan:0, hStabChord:0, hStabX:-20, hStabSweep:30,
+      vStabHeight:7.8, vStabChord:7.5, vStabX:-22, vStabSweep:45,
+      engineCount:4, engineDiameter:1.2, engineLength:4.0, engineDrop:1.0, engineSpan:0.14,
+      windowCount:22, deck:false, gearTrack:7.6, gearHeight:2.8}
+  },
+  {
+    id:'c172', name:'Cessna 172S Skyhawk', mfr:'Textron Aviation', cat:'Light aircraft · GA',
+    accuracy:'Reference-based parametric model', source:'Cessna public specifications',
+    specs:{span:'11.0 m', length:'8.28 m', height:'2.72 m', fus:'1.24 m wide',
+      engines:'1 × Lycoming IO-360', wing:'High wing, strut-braced', gear:'Tricycle', pax:'4'},
+    params:{...DEFAULTS,
+      noseStyle:'cessna', wingStyle:'straight', fuselageThickness:0.018,
+      length:8.28, fuselageRadius:0.62, noseLength:0.16, tailLength:0.22,
+      wingSpan:11.0, wingSweep:0, wingRootChord:1.65, wingTipChord:1.15,
+      wingThickness:0.12, wingDihedral:2, wingRootX:0.7, wingY:0.95,
+      hStabSpan:3.4, hStabChord:1.0, hStabX:-3.3, hStabSweep:6,
+      vStabHeight:1.35, vStabChord:1.5, vStabX:-3.4, vStabSweep:35,
+      engineCount:1, engineDiameter:0.9, engineLength:1.1, engineDrop:0, engineSpan:0,
+      engineMount:'nose',
+      windowCount:4, deck:false, gearTrack:2.5, gearHeight:0.85}
+  },
+  {
+    id:'g650', name:'Gulfstream G650', mfr:'Gulfstream', cat:'Business jet',
+    accuracy:'Reference-based parametric model', source:'Gulfstream public specifications',
+    specs:{span:'30.4 m', length:'30.4 m', height:'7.7 m', fus:'2.5 m dia.',
+      engines:'2 × BR725 (rear fuselage)', wing:'Swept', gear:'Tricycle', pax:'11–18'},
+    params:{...DEFAULTS,
+      noseStyle:'pointed', wingStyle:'winglet', fuselageThickness:0.04,
+      length:30.4, fuselageRadius:1.25, noseLength:0.15, tailLength:0.22,
+      wingSpan:30.4, wingSweep:33, wingRootChord:5.6, wingTipChord:1.2,
+      wingThickness:0.11, wingDihedral:4, wingRootX:0.4,
+      hStabSpan:9, hStabChord:2.6, hStabX:-12, hStabSweep:32,
+      vStabHeight:3.5, vStabChord:4.5, vStabX:-12, vStabSweep:42,
+      engineCount:2, engineDiameter:1.3, engineLength:3.0, engineDrop:0, engineSpan:0,
+      engineMount:'rear',
+      windowCount:12, deck:false, gearTrack:4.0, gearHeight:1.9}
+  },
+  {
+    id:'c17', name:'Boeing C-17 Globemaster III', mfr:'Boeing', cat:'Military · Cargo',
+    accuracy:'Reference-based parametric model (educational)', source:'USAF public data',
+    specs:{span:'51.75 m', length:'53.0 m', height:'16.8 m', fus:'6.8 m dia.',
+      engines:'4 × F117-PW-100', wing:'High wing, swept', gear:'Multi-bogie', pax:'Cargo 77 t'},
+    params:{...DEFAULTS,
+      noseStyle:'blunt', wingStyle:'swept', fuselageThickness:0.07,
+      length:53, fuselageRadius:3.4, noseLength:0.13, tailLength:0.19,
+      wingSpan:51.75, wingSweep:25, wingRootChord:10, wingTipChord:2.4,
+      wingThickness:0.14, wingDihedral:3, wingRootX:1.5, wingY:0.85,
+      hStabSpan:20, hStabChord:5, hStabX:-21, hStabSweep:28,
+      vStabHeight:7.5, vStabChord:7, vStabX:-21, vStabSweep:38,
+      engineCount:4, engineDiameter:2.4, engineLength:5.2, engineDrop:2.0, engineSpan:0.36,
+      windowCount:6, deck:false, gearTrack:10, gearHeight:3.5}
+  },
+  {
+    id:'heli', name:'Utility Helicopter (generic)', mfr:'Generic', cat:'Helicopter',
+    kind:'heli', accuracy:'Approximate generic model', source:'Generic proportions',
+    specs:{span:'14.8 m rotor', length:'15.0 m', height:'4.2 m', fus:'1.9 m wide',
+      engines:'1 × turboshaft', wing:'Main rotor', gear:'Skids', pax:'6–8'},
+    params:{...DEFAULTS, kind:'heli', length:15, fuselageRadius:1.15, rotorDiameter:14.8,
+      tailLength:0.42, windowCount:4, gearHeight:1.0}
+  },
+  {
+    id:'drone', name:'Quadcopter Drone (generic)', mfr:'Generic', cat:'UAV / Drone',
+    kind:'drone', accuracy:'Approximate generic model', source:'Generic proportions',
+    specs:{span:'0.55 m', length:'0.42 m', height:'0.16 m', fus:'0.16 m',
+      engines:'4 × electric', wing:'4 rotors', gear:'Skids', pax:'—'},
+    params:{...DEFAULTS, kind:'drone', length:0.42, fuselageRadius:0.09,
+      droneArm:0.27, rotorDiameter:0.26, gearHeight:0.06}
+  },
+  {
+    id:'custom', name:'Custom Aircraft (blank)', mfr:'User defined', cat:'Custom design',
+    accuracy:'User-created parametric design', source:'User parameters',
+    specs:{span:'user', length:'user', height:'user', fus:'user',
+      engines:'user', wing:'user', gear:'user', pax:'user'},
+    params:{...DEFAULTS}
+  }
+];
+
+/* =========================================================
+   2. GEOMETRY HELPERS
+   ========================================================= */
+function nacaThickness(xc, tr){
+  return 5*tr*(0.2969*Math.sqrt(xc) - 0.1260*xc - 0.3516*xc*xc
+       + 0.2843*xc*xc*xc - 0.1015*xc*xc*xc*xc);
+}
+
+/** Loft a series of equal-length point rings into a closed surface. */
+function loft(sections, capStart=true, capEnd=true){
+  const nS = sections.length, nP = sections[0].length;
+  const pos = [], idx = [];
+  for(const s of sections) for(const p of s) pos.push(p.x, p.y, p.z);
+  for(let i=0;i<nS-1;i++){
+    for(let j=0;j<nP;j++){
+      const a = i*nP + j;
+      const b = i*nP + (j+1)%nP;
+      const c = (i+1)*nP + (j+1)%nP;
+      const d = (i+1)*nP + j;
+      idx.push(a,b,c, a,c,d);
+    }
+  }
+  const cap = (si, flip) => {
+    const base = si*nP;
+    let cx=0, cy=0, cz=0;
+    for(let j=0;j<nP;j++){
+      cx += pos[(base+j)*3]; cy += pos[(base+j)*3+1]; cz += pos[(base+j)*3+2];
+    }
+    cx/=nP; cy/=nP; cz/=nP;
+    const ci = pos.length/3;
+    pos.push(cx, cy, cz);
+    for(let j=0;j<nP;j++){
+      const a = base+j, b = base+(j+1)%nP;
+      if(flip) idx.push(ci,b,a); else idx.push(ci,a,b);
+    }
+  };
+  if(capStart) cap(0, true);
+  if(capEnd) cap(nS-1, false);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Horizontal lifting-surface cross-section in the XY plane at a given Z. */
+function airfoilRing(xLE, z, chord, tr, yOff, M=6){
+  const pts = [];
+  for(let i=0;i<M;i++){
+    const xc = i/(M-1);
+    pts.push(new THREE.Vector3(xLE + xc*chord, yOff + nacaThickness(xc, tr)*chord, z));
+  }
+  for(let i=M-2;i>=1;i--){
+    const xc = i/(M-1);
+    pts.push(new THREE.Vector3(xLE + xc*chord, yOff - nacaThickness(xc, tr)*chord, z));
+  }
+  return pts;
+}
+
+/** Vertical-surface cross-section in the XZ plane at a given Y (zOff centres the thickness). */
+function finRing(xLE, y, chord, tr, zOff=0, M=6){
+  const pts = [];
+  for(let i=0;i<M;i++){
+    const xc = i/(M-1);
+    pts.push(new THREE.Vector3(xLE + xc*chord, y, zOff + nacaThickness(xc, tr)*chord));
+  }
+  for(let i=M-2;i>=1;i--){
+    const xc = i/(M-1);
+    pts.push(new THREE.Vector3(xLE + xc*chord, y, zOff - nacaThickness(xc, tr)*chord));
+  }
+  return pts;
+}
+
+function circleRing(cx, cy, cz, radius, seg, axis='x'){
+  const pts = [];
+  for(let i=0;i<seg;i++){
+    const a = (i/seg)*Math.PI*2;
+    if(axis==='x') pts.push(new THREE.Vector3(cx, cy+Math.cos(a)*radius, cz+Math.sin(a)*radius));
+    else pts.push(new THREE.Vector3(cx+Math.cos(a)*radius, cy+Math.sin(a)*radius, cz));
+  }
+  return pts;
+}
+
+/* ---------- nose profiles ---------- */
+function noseProfileFn(style, t){
+  switch(style){
+    case 'airbus':   return Math.pow(Math.max(0, 1 - Math.pow(t, 2.6)), 0.5);
+    case 'boeing':   return Math.pow(Math.max(0, 1 - Math.pow(t, 2.0)), 0.62);
+    case 'concorde': return Math.pow(Math.max(0, 1 - t), 0.95);
+    case 'cessna':   return Math.sqrt(Math.max(0, 1 - t*t));
+    case 'pointed':  return Math.pow(Math.max(0, 1 - t), 1.30);
+    case 'blunt':    return Math.pow(Math.max(0, 1 - Math.pow(t, 5)), 0.35);
+    default:         return Math.pow(Math.max(0, 1 - Math.pow(t, 2.0)), 0.62);
+  }
+}
+
+/* ---------- window layout in (x, angle) space ---------- */
+function computeWindowList(p){
+  const L = p.length, r = p.fuselageRadius;
+  const n = Math.max(0, Math.round(p.windowCount || 0));
+  if(!n) return [];
+  const noseL = L*clamp(p.noseLength, 0.02, 0.45);
+  const tailL = L*clamp(p.tailLength, 0.02, 0.45);
+  const cabL  = Math.max(L - noseL - tailL, L*0.05);
+  const xa = -L/2 + tailL + cabL*0.10;
+  const xb = -L/2 + tailL + cabL*0.92;
+  const ww = clamp(L*0.0075, 0.10, 0.60);   // window width along X (m)
+  const wh = clamp(L*0.0095, 0.12, 0.80);   // window height along the arc (m)
+  const halfAngle = clamp((wh / Math.max(r, 0.01)) * 0.5, 0.02, 0.9);
+  const rows = p.deck ? [0.20, 0.62] : [0.22];
+  const list = [];
+  for(const rr of rows){
+    const a0 = Math.acos(clamp(rr, -1, 1));
+    for(let i=0;i<n;i++){
+      const x = n > 1 ? xa + (xb-xa)*(i/(n-1)) : (xa+xb)/2;
+      for(const s of [1,-1]){
+        list.push({ x, a: s*a0, w: ww, h: halfAngle*2 });
+      }
+    }
+  }
+  return list;
+}
+
+/* ---------- fuselage: outer skin (with optional holes), inner skin, hole rims ---------- */
+function makeFuselage(p, q){
+  const L = p.length, r = p.fuselageRadius;
+  const noseStyle = p.noseStyle || 'boeing';
+  const tSkin = clamp(p.fuselageThickness ?? 0.06, 0.004, Math.max(0.01, r*0.6));
+  const noseL = L*clamp(p.noseLength, 0.02, 0.45);
+  const tailL = L*clamp(p.tailLength, 0.02, 0.45);
+  const cabL  = Math.max(L - noseL - tailL, L*0.05);
+  const xTail = -L/2, xNose = L/2;
+  const xCab0 = xTail + tailL;
+  const xCab1 = xCab0 + cabL;
+
+  const radAt = x => {
+    const xr = x - xTail;
+    if(xr <= tailL){
+      const t = clamp(xr / Math.max(tailL, 1e-6), 0, 1);
+      return Math.max(r * (0.06 + 0.94 * Math.pow(t, 0.72)), r*0.02);
+    }
+    if(xr <= tailL + cabL) return r;
+    const t = clamp((xr - tailL - cabL) / Math.max(noseL, 1e-6), 0, 1);
+    return Math.max(r * noseProfileFn(noseStyle, t), r*0.02);
+  };
+
+  const yOffAt = x => {
+    if(noseStyle !== 'concorde') return 0;
+    const xr = x - xTail;
+    if(xr <= tailL + cabL) return 0;
+    const t = clamp((xr - tailL - cabL) / Math.max(noseL, 1e-6), 0, 1);
+    return -r * 0.60 * Math.pow(t, 2.0);
+  };
+
+  const winList = computeWindowList(p);
+  const winMode = p.windowMode || 'holes';
+  const holeMode = (winMode === 'holes') && winList.length > 0;
+
+  /* ---------------- sampling grids ---------------- */
+  const xKey = v => v.toFixed(5);
+  const aKey = v => v.toFixed(6);
+
+  const xsSet = new Set();
+  xsSet.add(xKey(xTail));
+  xsSet.add(xKey(xNose));
+  const nXBase = clamp(Math.round(34*q), 20, 90);
+  for(let i=0;i<=nXBase;i++) xsSet.add(xKey(xTail + L*i/nXBase));
+  for(let i=0;i<=8;i++)  xsSet.add(xKey(xTail + tailL*i/8));
+  for(let i=0;i<=12;i++) xsSet.add(xKey(xCab1 + noseL*i/12));
+  if(holeMode) for(const w of winList){
+    xsSet.add(xKey(w.x - w.w/2));
+    xsSet.add(xKey(w.x + w.w/2));
+  }
+  const xs = [...xsSet].map(Number).sort((a,b)=>a-b);
+  const xIndex = new Map();
+  xs.forEach((v,i)=>xIndex.set(xKey(v), i));
+
+  const asSet = new Set();
+  const nA = clamp(Math.round(40*q), 24, 72);
+  for(let j=0;j<=nA;j++) asSet.add(aKey(-Math.PI + 2*Math.PI*j/nA));
+  if(winList.length) for(const w of winList){
+    asSet.add(aKey(w.a - w.h/2));
+    asSet.add(aKey(w.a + w.h/2));
+  }
+  const as = [...asSet].map(Number).sort((a,b)=>a-b);
+  const aIndex = new Map();
+  as.forEach((v,i)=>aIndex.set(aKey(v), i));
+
+  /* ---------------- which quads are holes ---------------- */
+  const holes = new Set();
+  if(holeMode){
+    for(const w of winList){
+      const i0 = xIndex.get(xKey(w.x - w.w/2));
+      const i1 = xIndex.get(xKey(w.x + w.w/2));
+      const j0 = aIndex.get(aKey(w.a - w.h/2));
+      const j1 = aIndex.get(aKey(w.a + w.h/2));
+      if(i0==null || i1==null || j0==null || j1==null) continue;
+      for(let i=i0;i<i1;i++) for(let j=j0;j<j1;j++) holes.add(i+'|'+j);
+    }
+  }
+
+  /* ---------------- outer skin ---------------- */
+  const outer = (() => {
+    const nu = xs.length, nv = as.length;
+    const pos = [], idx = [];
+    for(let i=0;i<nu;i++){
+      const x = xs[i], R = radAt(x), yo = yOffAt(x);
+      for(let j=0;j<nv;j++){
+        const a = as[j];
+        pos.push(x, yo + R*Math.cos(a), R*Math.sin(a));
+      }
+    }
+    for(let i=0;i<nu-1;i++){
+      for(let j=0;j<nv-1;j++){
+        if(holes.has(i+'|'+j)) continue;
+        const a0 = i*nv + j;
+        const b0 = i*nv + j+1;
+        const c0 = (i+1)*nv + j+1;
+        const d0 = (i+1)*nv + j;
+        idx.push(a0,b0,c0, a0,c0,d0);
+      }
+    }
+    const capFan = (i, flip) => {
+      const base = i*nv;
+      let cx=0, cy=0, cz=0;
+      for(let j=0;j<nv;j++){
+        cx += pos[(base+j)*3]; cy += pos[(base+j)*3+1]; cz += pos[(base+j)*3+2];
+      }
+      cx/=nv; cy/=nv; cz/=nv;
+      const ci = pos.length/3;
+      pos.push(cx,cy,cz);
+      for(let j=0;j<nv-1;j++){
+        const a = base+j, b = base+j+1;
+        if(flip) idx.push(ci,b,a); else idx.push(ci,a,b);
+      }
+    };
+    capFan(0, true);
+    capFan(nu-1, false);
+
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  })();
+
+  /* ---------------- inner skin (wall thickness) ---------------- */
+  const inner = (() => {
+    const nXI = clamp(Math.round(30*q), 16, 60);
+    const nAI = clamp(Math.round(28*q), 16, 56);
+    const pos = [], idx = [];
+    for(let i=0;i<=nXI;i++){
+      const x = xTail + L*i/nXI;
+      const R = Math.max(radAt(x) - tSkin, 0.002);
+      const yo = yOffAt(x);
+      for(let j=0;j<=nAI;j++){
+        const a = -Math.PI + 2*Math.PI*j/nAI;
+        pos.push(x, yo + R*Math.cos(a), R*Math.sin(a));
+      }
+    }
+    for(let i=0;i<nXI;i++){
+      for(let j=0;j<nAI;j++){
+        const a0 = i*(nAI+1)+j, b0 = a0+1;
+        const c0 = (i+1)*(nAI+1)+j+1, d0 = (i+1)*(nAI+1)+j;
+        idx.push(a0,c0,b0, a0,d0,c0);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  })();
+
+  /* ---------------- rim surfaces for every window hole ---------------- */
+  let rims = null;
+  if(holeMode && winList.length){
+    const pos = [], idx = [];
+    for(const w of winList){
+      const x0 = w.x - w.w/2, x1 = w.x + w.w/2;
+      const a0 = w.a - w.h/2, a1 = w.a + w.h/2;
+      const corners = [[x0,a0],[x1,a0],[x1,a1],[x0,a1]];
+      const O = corners.map(([x,a])=>{
+        const R = radAt(x), yo = yOffAt(x);
+        return [x, yo + R*Math.cos(a), R*Math.sin(a)];
+      });
+      const I = corners.map(([x,a])=>{
+        const R = Math.max(radAt(x) - tSkin, 0.002), yo = yOffAt(x);
+        return [x, yo + R*Math.cos(a), R*Math.sin(a)];
+      });
+      for(let k=0;k<4;k++){
+        const k2 = (k+1)%4;
+        const base = pos.length/3;
+        pos.push(...O[k], ...O[k2], ...I[k2], ...I[k]);
+        idx.push(base, base+1, base+2, base, base+2, base+3);
+      }
+    }
+    rims = new THREE.BufferGeometry();
+    rims.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    rims.setIndex(idx);
+    rims.computeVertexNormals();
+  }
+
+  return { outer, inner, rims, winList, winMode, tSkin, xNose, noseL, radAt };
+}
+
+/* ---------- wings (style-driven) ---------- */
+function buildWingGeo(p, side, q){
+  const style = p.wingStyle || 'raked';
+  const half = p.wingSpan/2;
+  const r = p.fuselageRadius;
+  const rootZ = r*0.55;
+  const sweepTan = Math.tan(rad(p.wingSweep));
+  const dihTan = Math.tan(rad(p.wingDihedral));
+  const baseY = (p.wingY||0)*r;
+  const N = Math.max(4, Math.round(6*q));
+  const M = Math.max(5, Math.round(7*q));
+
+  const chordAt = t => {
+    const cR = p.wingRootChord, cT = p.wingTipChord;
+    switch(style){
+      case 'delta':
+        return Math.max(cT*0.20, cR*Math.pow(Math.max(0,1-t), 0.72));
+      case 'elliptical':
+        return Math.max(cT*0.15, cR*Math.sqrt(Math.max(0, 1 - Math.pow(t, 2.2))));
+      case 'straight':
+        return lerp(cR, cT, 0.35*t);
+      default:
+        return lerp(cR, cT, t);
+    }
+  };
+
+  const sections = [];
+  let tip = null;
+  for(let i=0;i<=N;i++){
+    const t = i/N;
+    const az = rootZ + t*(half - rootZ);
+    const chord = chordAt(t);
+    const xLE = p.wingRootX - sweepTan*(az - rootZ);
+    const y = baseY + dihTan*(az - rootZ);
+    const tr = lerp(p.wingThickness, p.wingThickness*0.55, t);
+    sections.push(airfoilRing(xLE, side*az, chord, tr, y, M));
+    if(i === N) tip = { z: side*az, y, xLE, chord, tr };
+  }
+
+  const parts = [];
+
+  if(style === 'raked'){
+    sections.push(airfoilRing(tip.xLE + tip.chord*0.30, side*(half + 0.35),
+      tip.chord*0.62, tip.tr*0.95, tip.y + 0.28, M));
+    sections.push(airfoilRing(tip.xLE + tip.chord*0.52, side*(half + 0.46),
+      tip.chord*0.28, tip.tr*0.85, tip.y + 0.80, M));
+  }
+  parts.push(loft(sections, true, true));
+
+  if(style === 'winglet'){
+    const wl = [];
+    const NH = 3;
+    for(let k=0;k<=NH;k++){
+      const f = k/NH;
+      wl.push(finRing(
+        tip.xLE + tip.chord*0.12*f,
+        tip.y + 2.1*f,
+        tip.chord*(1 - 0.52*f),
+        0.10,
+        side*half + side*0.06*f,
+        Math.max(4, Math.round(5*q))
+      ));
+    }
+    parts.push(loft(wl, true, true));
+  }
+
+  return mergeGeometries(parts, false);
+}
+
+function buildHStabGeo(p, side, q){
+  if(p.hStabSpan <= 0.01) return null;
+  const half = p.hStabSpan/2;
+  const rootZ = p.fuselageRadius*0.5;
+  const sweepTan = Math.tan(rad(p.hStabSweep || 30));
+  const N = 3, M = Math.max(4, Math.round(5*q));
+  const sections = [];
+  for(let i=0;i<=N;i++){
+    const t = i/N;
+    const az = rootZ + t*(half - rootZ);
+    const chord = lerp(p.hStabChord, p.hStabChord*0.45, t);
+    const xLE = p.hStabX - sweepTan*(az - rootZ);
+    sections.push(airfoilRing(xLE, side*az, chord, 0.10, 0, M));
+  }
+  return loft(sections, true, true);
+}
+
+function buildVStabGeo(p, q){
+  if(p.vStabHeight <= 0.01) return null;
+  const N = 3, M = Math.max(4, Math.round(5*q));
+  const sweepTan = Math.tan(rad(p.vStabSweep || 35));
+  const sections = [];
+  for(let i=0;i<=N;i++){
+    const t = i/N;
+    const y = p.fuselageRadius*0.7 + t*p.vStabHeight;
+    const chord = lerp(p.vStabChord, p.vStabChord*0.45, t);
+    const xLE = p.vStabX - sweepTan*(t*p.vStabHeight);
+    sections.push(finRing(xLE, y, chord, 0.10, 0, M));
+  }
+  return loft(sections, true, true);
+}
+
+/* ---------- engines ---------- */
+function buildNacelleGeo(p, q){
+  const R = p.engineDiameter/2, L = p.engineLength;
+  const seg = Math.max(10, Math.round(16*q));
+  const prof = [
+    [ 0.50, 0.92],[ 0.42, 0.99],[ 0.30, 1.00],[ 0.00, 0.98],
+    [-0.25, 0.93],[-0.45, 0.85],[-0.50, 0.70]
+  ];
+  const sections = prof.map(([xf, rf]) =>
+    circleRing(xf*L, 0, 0, Math.max(R*rf, R*0.05), seg, 'x'));
+  return loft(sections, true, true);
+}
+function buildFanGeo(p, q){
+  const R = p.engineDiameter/2, L = p.engineLength;
+  const g = new THREE.CylinderGeometry(R*0.82, R*0.82, L*0.06, Math.max(10, Math.round(18*q)));
+  g.rotateZ(Math.PI/2);
+  g.translate(L*0.36, 0, 0);
+  const cone = new THREE.ConeGeometry(R*0.28, L*0.16, Math.max(8, Math.round(14*q)));
+  cone.rotateZ(-Math.PI/2);
+  cone.translate(L*0.44, 0, 0);
+  return mergeGeometries([g, cone], false);
+}
+function buildPylonGeo(p){
+  const L = p.engineLength, R = p.engineDiameter/2;
+  const g = new THREE.BoxGeometry(L*0.55, R*1.4, R*0.28);
+  g.translate(-L*0.06, R*0.9, 0);
+  return g;
+}
+
+function enginePlacements(p){
+  const r = p.fuselageRadius;
+  const half = p.wingSpan/2, rootZ = r*0.55;
+  const sweepTan = Math.tan(rad(p.wingSweep));
+  const dihTan = Math.tan(rad(p.wingDihedral));
+  const baseY = (p.wingY||0)*r;
+  const out = [];
+  const mount = p.engineMount || 'wing';
+  if(mount === 'nose'){
+    out.push({x:p.length/2 - p.engineLength*0.35, y:0, z:0, side:1});
+    return out;
+  }
+  if(mount === 'rear'){
+    const n = Math.max(1, Math.round(p.engineCount));
+    for(let i=0;i<n;i++){
+      const s = i % 2 === 0 ? 1 : -1;
+      out.push({ x: -p.length*0.26, y: r*0.55, z: s*(r + p.engineDiameter*0.62), side: s });
+    }
+    return out;
+  }
+  const n = Math.max(0, Math.round(p.engineCount));
+  const fracs = n >= 4 ? [0.33, 0.55] : n === 3 ? [0.36] : n === 2 ? [0.40] : [];
+  for(const f of fracs){
+    for(const s of [1,-1]){
+      const az = rootZ + f*(half - rootZ);
+      const xLE = p.wingRootX - sweepTan*(az - rootZ);
+      const y = baseY + dihTan*(az - rootZ);
+      out.push({ x: xLE - p.engineLength*0.30, y: y - p.engineDrop, z: s*az, side: s });
+    }
+  }
+  if(n === 3) out.push({x:-p.length*0.36, y:r*0.9, z:0, side:1});
+  return out;
+}
+
+/* ---------- landing gear ---------- */
+function gearLeg(height, wheelR, track, strutR, q){
+  const geos = [];
+  const strut = new THREE.CylinderGeometry(strutR, strutR, height, Math.max(6, Math.round(8*q)));
+  strut.translate(0, -height/2, 0);
+  geos.push(strut);
+  for(const s of [-1, 1]){
+    const w = new THREE.CylinderGeometry(wheelR, wheelR, wheelR*0.5, Math.max(8, Math.round(12*q)));
+    w.rotateX(Math.PI/2);
+    w.translate(0, -height, s*track*0.5);
+    geos.push(w);
+  }
+  return mergeGeometries(geos, false);
+}
+
+/* =========================================================
+   3. MODEL ASSEMBLY
+   ========================================================= */
+let modelRoot = null;
+
+function buildModel(ac){
+  const p = ac.params;
+  const q = state.quality;
+  const root = new THREE.Group();
+  root.name = ac.name;
+
+  const mkMat = (color, rough, metal, extra) => new THREE.MeshStandardMaterial(Object.assign({
+    color, roughness: rough ?? 0.45, metalness: metal ?? 0.55, side: THREE.DoubleSide
+  }, extra || {}));
+
+  const comp = (name, type) => {
+    const g = new THREE.Group();
+    g.name = name;
+    g.userData.isComponent = true;
+    g.userData.type = type || 'part';
+    root.add(g);
+    return g;
+  };
+  const mesh = (geo, color, opt={}) => {
+    if(!geo) return null;
+    const m = mkMat(color, opt.rough, opt.metal, opt.mat);
+    const me = new THREE.Mesh(geo, m);
+    me.userData.baseColor = color;
+    me.userData.baseRough = m.roughness;
+    me.userData.baseMetal = m.metalness;
+    if(opt.role) me.userData.role = opt.role;
+    me.name = opt.name || 'mesh';
+    return me;
+  };
+
+  if(p.kind === 'heli')      buildHelicopter(p, q, root, comp, mesh);
+  else if(p.kind === 'drone') buildDrone(p, q, root, comp, mesh);
+  else                       buildFixedWing(p, q, root, comp, mesh);
+
+  return root;
+}
+
+function buildFixedWing(p, q, root, comp, mesh){
+  const C_BODY  = 0xe7ecf2;
+  const C_INNER = 0x171f29;
+  const C_RIM   = 0x9aa6b2;
+  const C_WING  = 0xd6dde6;
+  const C_ENG   = 0xb9c2cc;
+  const C_DARK  = 0x1b2430;
+  const C_GEAR  = 0x8c97a4;
+  const C_GLASS = 0x24435c;
+
+  /* ---------------- fuselage + skin ---------------- */
+  const fus = makeFuselage(p, q);
+  const fusComp = comp('Fuselage', 'body');
+  fusComp.add(mesh(fus.outer, C_BODY, {name:'OuterSkin', role:'outerSkin'}));
+  fusComp.add(mesh(fus.inner, C_INNER, {name:'InnerSkin', role:'innerSkin', rough:0.95, metal:0.05}));
+
+  /* ---------------- cockpit glazing ---------------- */
+  const ckComp = comp('Cockpit', 'body');
+  const nx = fus.xNose - fus.noseL*0.45;
+  const noseR = fus.radAt(nx) || p.fuselageRadius*0.4;
+  for(let i=0;i<3;i++){
+    const g = new THREE.BoxGeometry(p.length*0.035, noseR*0.30, noseR*0.52);
+    g.translate(nx - i*p.length*0.018, noseR*0.46 - i*noseR*0.04, (i-1)*noseR*0.44);
+    ckComp.add(mesh(g, C_GLASS, {rough:0.15, metal:0.2, name:'Windshield'}));
+  }
+
+  /* ---------------- windows ---------------- */
+  if(fus.winList.length){
+    const winComp = comp('Windows', 'detail');
+    if(fus.winMode === 'holes' && fus.rims){
+      winComp.add(mesh(fus.rims, C_RIM, {name:'WindowRims', rough:0.5, metal:0.55}));
+      winComp.userData.note = 'Window openings are cut through the outer skin.';
+    } else if(fus.winMode === 'glass'){
+      const geos = [];
+      for(const w of fus.winList){
+        const R = fus.radAt(w.x) - fus.tSkin*0.55;
+        const g = new THREE.BoxGeometry(w.w*0.92, fus.tSkin*0.55, w.h*R*0.90);
+        g.rotateX(w.a);
+        const yo = 0;
+        g.translate(w.x, R*Math.cos(w.a), R*Math.sin(w.a));
+        geos.push(g);
+      }
+      const merged = mergeGeometries(geos, false);
+      winComp.add(mesh(merged, C_GLASS, {name:'WindowGlass', rough:0.18, metal:0.25}));
+      winComp.userData.note = 'Recessed dark glass panels set into the skin.';
+    }
+  }
+
+  /* ---------------- wings ---------------- */
+  const lw = comp('Left Wing', 'lifting');
+  lw.add(mesh(buildWingGeo(p, -1, q), C_WING, {name:'LeftWingSurface'}));
+  const rw = comp('Right Wing', 'lifting');
+  rw.add(mesh(buildWingGeo(p, 1, q), C_WING, {name:'RightWingSurface'}));
+
+  /* ---------------- engines ---------------- */
+  const places = enginePlacements(p);
+  places.forEach((pl, i) => {
+    const sideName = pl.z < -0.001 ? 'Left' : pl.z > 0.001 ? 'Right' : 'Centre';
+    const g = comp(`Engine ${sideName} ${Math.floor(i/2)+1}`, 'engine');
+    const nac = mesh(buildNacelleGeo(p, q), C_ENG, {metal:0.85, rough:0.28, name:'Nacelle'});
+    nac.position.set(pl.x, pl.y, pl.z);
+    g.add(nac);
+    const fan = mesh(buildFanGeo(p, q), C_DARK, {metal:0.9, rough:0.2, name:'Fan'});
+    fan.position.set(pl.x, pl.y, pl.z);
+    g.add(fan);
+    if((p.engineMount||'wing') === 'wing'){
+      const pyl = mesh(buildPylonGeo(p), C_WING, {name:'Pylon'});
+      pyl.position.set(pl.x, pl.y, pl.z);
+      g.add(pyl);
+    }
+  });
+
+  /* ---------------- empennage ---------------- */
+  const hs = comp('Horizontal Stabilizer', 'lifting');
+  const hsg = buildHStabGeo(p, 1, q);
+  if(hsg){
+    hs.add(mesh(hsg, C_WING, {name:'HStabRight'}));
+    hs.add(mesh(buildHStabGeo(p, -1, q), C_WING, {name:'HStabLeft'}));
+  }
+  const vs = comp('Vertical Stabilizer', 'lifting');
+  const vsg = buildVStabGeo(p, q);
+  if(vsg) vs.add(mesh(vsg, C_WING, {name:'VStab'}));
+
+  /* ---------------- landing gear ---------------- */
+  const lg = comp('Landing Gear', 'gear');
+  const gh = p.gearHeight, wr = Math.min(gh*0.32, p.fuselageRadius*0.5);
+  const noseX = p.length/2 - p.length*p.noseLength - p.length*0.10;
+  const noseLeg = mesh(gearLeg(gh*0.85, wr*0.75, 0.35, p.length*0.006, q), C_GEAR,
+    {metal:0.9, rough:0.35, name:'NoseGear'});
+  noseLeg.position.set(noseX, -p.fuselageRadius*0.55, 0);
+  lg.add(noseLeg);
+  const mainX = p.wingRootX - p.wingRootChord*0.15;
+  for(const s of [-1,1]){
+    const leg = mesh(gearLeg(gh, wr, 0.9, p.length*0.008, q), C_GEAR,
+      {metal:0.9, rough:0.35, name:'MainGear'});
+    leg.position.set(mainX, -p.fuselageRadius*0.75, s*p.gearTrack*0.5);
+    lg.add(leg);
+  }
+}
+
+function buildHelicopter(p, q, root, comp, mesh){
+  const C = 0xdfe6ee, DARK = 0x1b2430, MET = 0x8c97a4;
+  const body = comp('Fuselage', 'body');
+  const g = new THREE.SphereGeometry(p.fuselageRadius, Math.max(12, Math.round(20*q)),
+    Math.max(8, Math.round(12*q)));
+  g.scale(p.length/(p.fuselageRadius*2.2), 1, 0.9);
+  body.add(mesh(g, C, {name:'Cabin'}));
+
+  const boom = comp('Tail Boom', 'body');
+  const bg = new THREE.CylinderGeometry(p.fuselageRadius*0.22, p.fuselageRadius*0.13,
+    p.length*p.tailLength, Math.max(8, Math.round(10*q)));
+  bg.rotateZ(Math.PI/2);
+  bg.translate(-p.length*0.42, p.fuselageRadius*0.15, 0);
+  boom.add(mesh(bg, C, {name:'Boom'}));
+
+  const fin = comp('Tail Fin', 'lifting');
+  const fg = new THREE.BoxGeometry(p.fuselageRadius*1.1, p.fuselageRadius*1.6, 0.08);
+  fg.translate(-p.length*0.52, p.fuselageRadius*0.75, 0);
+  fin.add(mesh(fg, C, {name:'Fin'}));
+
+  const rotor = comp('Main Rotor', 'rotor');
+  const R = p.rotorDiameter/2;
+  for(let i=0;i<4;i++){
+    const bg2 = new THREE.BoxGeometry(R*2, 0.035, R*0.11);
+    bg2.rotateY(i*Math.PI/2);
+    bg2.translate(0, p.fuselageRadius*1.25, 0);
+    rotor.add(mesh(bg2, DARK, {metal:0.7, rough:0.4, name:'Blade'}));
+  }
+  const hub = new THREE.CylinderGeometry(p.fuselageRadius*0.14, p.fuselageRadius*0.14,
+    p.fuselageRadius*0.3, 10);
+  hub.translate(0, p.fuselageRadius*1.15, 0);
+  rotor.add(mesh(hub, MET, {metal:0.9, name:'Hub'}));
+
+  const tr = comp('Tail Rotor', 'rotor');
+  const tg = new THREE.CylinderGeometry(R*0.18, R*0.18, 0.04, 10);
+  tg.rotateX(Math.PI/2);
+  tg.translate(-p.length*0.53, p.fuselageRadius*0.85, 0.12);
+  tr.add(mesh(tg, DARK, {name:'TailRotor'}));
+
+  const sk = comp('Landing Skids', 'gear');
+  for(const s of [-1,1]){
+    const sg = new THREE.CylinderGeometry(0.045, 0.045, p.length*0.35, 8);
+    sg.rotateZ(Math.PI/2);
+    sg.translate(0, -p.fuselageRadius*0.95, s*p.fuselageRadius*0.75);
+    sk.add(mesh(sg, MET, {metal:0.9, name:'Skid'}));
+  }
+}
+
+function buildDrone(p, q, root, comp, mesh){
+  const C = 0x2b3440, ACC = 0x3b82f6, MET = 0x9aa6b2;
+  const body = comp('Body', 'body');
+  const bg = new THREE.BoxGeometry(p.length*0.6, p.fuselageRadius*1.2, p.length*0.45);
+  body.add(mesh(bg, C, {metal:0.4, rough:0.6, name:'Frame'}));
+
+  const arms = comp('Arms', 'structure');
+  for(let i=0;i<4;i++){
+    const a = Math.PI/4 + i*Math.PI/2;
+    const ag = new THREE.CylinderGeometry(p.fuselageRadius*0.12, p.fuselageRadius*0.12,
+      p.droneArm, 8);
+    ag.rotateZ(Math.PI/2);
+    ag.rotateY(-a);
+    ag.translate(Math.cos(a)*p.droneArm*0.5, 0, Math.sin(a)*p.droneArm*0.5);
+    arms.add(mesh(ag, MET, {metal:0.8, name:'Arm'}));
+  }
+
+  const rot = comp('Rotors', 'rotor');
+  for(let i=0;i<4;i++){
+    const a = Math.PI/4 + i*Math.PI/2;
+    const x = Math.cos(a)*p.droneArm, z = Math.sin(a)*p.droneArm;
+    const disc = new THREE.CylinderGeometry(p.rotorDiameter/2, p.rotorDiameter/2,
+      p.fuselageRadius*0.05, Math.max(10, Math.round(16*q)));
+    disc.translate(x, p.fuselageRadius*0.55, z);
+    rot.add(mesh(disc, ACC, {metal:0.3, rough:0.5, mat:{transparent:true, opacity:0.55},
+      name:'RotorDisc'}));
+    const mot = new THREE.CylinderGeometry(p.fuselageRadius*0.22, p.fuselageRadius*0.22,
+      p.fuselageRadius*0.4, 10);
+    mot.translate(x, p.fuselageRadius*0.2, z);
+    rot.add(mesh(mot, MET, {metal:0.9, name:'Motor'}));
+  }
+
+  const sk = comp('Landing Skids', 'gear');
+  for(const s of [-1,1]){
+    const sg = new THREE.BoxGeometry(p.length*0.4, p.fuselageRadius*0.12,
+      p.fuselageRadius*0.12);
+    sg.translate(0, -p.gearHeight, s*p.fuselageRadius*0.5);
+    sk.add(mesh(sg, C, {name:'Skid'}));
+  }
+}
+
+/* =========================================================
+   4. THREE.JS VIEWER
+   ========================================================= */
+const canvas = $('#c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.localClippingEnabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0e13);
+scene.fog = new THREE.Fog(0x0a0e13, 400, 1200);
+
+const perspCam = new THREE.PerspectiveCamera(45, 1, 0.05, 5000);
+perspCam.position.set(70, 45, 95);
+const orthoCam = new THREE.OrthographicCamera(-60, 60, 60, -60, -2000, 5000);
+orthoCam.position.copy(perspCam.position);
+let camera = perspCam;
+let usingOrtho = false;
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.screenSpacePanning = true;
+controls.target.set(0, 0, 0);
+
+scene.add(new THREE.HemisphereLight(0x9fc6ff, 0x101820, 1.1));
+const key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(60, 90, 60); scene.add(key);
+const fill = new THREE.DirectionalLight(0x88aaff, 0.9); fill.position.set(-70, 30, -60); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffffff, 0.7); rim.position.set(0, -50, -80); scene.add(rim);
+
+const grid = new THREE.GridHelper(400, 80, 0x2a3a4a, 0x18222c);
+grid.material.transparent = true; grid.material.opacity = 0.85;
+scene.add(grid);
+const axes = new THREE.AxesHelper(14);
+axes.position.y = 0.01;
+scene.add(axes);
+
+const clipPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
+let clippingEnabled = false;
+
+let edgeGroup = new THREE.Group();
+scene.add(edgeGroup);
+
+const measureGroup = new THREE.Group();
+scene.add(measureGroup);
+
+function resize(){
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if(!w || !h) return;
+  renderer.setSize(w, h, false);
+  perspCam.aspect = w/h; perspCam.updateProjectionMatrix();
+  const aspect = w/h;
+  const d = 70;
+  orthoCam.left = -d*aspect; orthoCam.right = d*aspect;
+  orthoCam.top = d; orthoCam.bottom = -d;
+  orthoCam.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+resize();
+animate();
+
+/* =========================================================
+   5. APPLICATION STATE
+   ========================================================= */
+const state = {
+  aircraftId: 'b787',
+  params: null,
+  quality: 1,
+  displayMode: 'solid',
+  showEdges: false,
+  measureMode: false,
+  measurePoints: [],
+  selected: null,
+  history: [],
+  histIdx: -1,
+  projectName: 'Untitled Aircraft',
+  revision: 1,
+  triCount: 0
+};
+
+function currentAC(){ return DB.find(a => a.id === state.aircraftId) || DB[0]; }
+
+let rebuildQueued = false;
+function queueRebuild(){
+  if(rebuildQueued) return;
+  rebuildQueued = true;
+  requestAnimationFrame(() => { rebuildQueued = false; rebuild(); });
+}
+
+function disposeGroup(g){
+  g.traverse(o => {
+    if(o.geometry) o.geometry.dispose();
+    if(o.material){
+      if(Array.isArray(o.material)) o.material.forEach(m=>m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+function rebuild(fit=false){
+  const ac = currentAC();
+  ac.params = state.params;
+  if(modelRoot){ scene.remove(modelRoot); disposeGroup(modelRoot); }
+  modelRoot = buildModel(ac);
+  scene.add(modelRoot);
+
+  buildEdges();
+  applyDisplayMode();
+  applyClipping();
+  applyGhost();
+  updateTriangleCount();
+  renderTree();
+  updateInfoPanel();
+  if(state.selected) selectComponent(state.selected, true);
+  if(fit) fitView();
+}
+
+function updateTriangleCount(){
+  let tris = 0;
+  modelRoot.traverse(o => {
+    if(o.isMesh && o.geometry){
+      const idx = o.geometry.index;
+      const pos = o.geometry.attributes.position;
+      tris += idx ? idx.count/3 : (pos ? pos.count/3 : 0);
+    }
+  });
+  state.triCount = Math.round(tris);
+  $('#tripPill').textContent = `${state.triCount.toLocaleString()} tris`;
+}
+
+/* ---------- edges ---------- */
+function buildEdges(){
+  if(edgeGroup) { scene.remove(edgeGroup); disposeGroup(edgeGroup); }
+  edgeGroup = new THREE.Group();
+  const mat = new THREE.LineBasicMaterial({color:0x7fb2ff, transparent:true, opacity:0.55});
+  modelRoot.updateMatrixWorld(true);
+  modelRoot.traverse(o => {
+    if(o.isMesh && o.geometry){
+      const eg = new THREE.EdgesGeometry(o.geometry, 28);
+      const ls = new THREE.LineSegments(eg, mat);
+      ls.applyMatrix4(o.matrixWorld);
+      ls.userData.isEdge = true;
+      edgeGroup.add(ls);
+    }
+  });
+  scene.add(edgeGroup);
+}
+
+/* ---------- display modes ---------- */
+function applyDisplayMode(){
+  if(!modelRoot) return;
+  const mode = state.displayMode;
+  modelRoot.traverse(o => {
+    if(!o.isMesh || o.userData.baseColor === undefined) return;
+    const m = o.material;
+    if(mode === 'wireframe'){
+      m.wireframe = true;
+      m.color.setHex(o.userData.baseColor);
+      m.metalness = o.userData.baseMetal; m.roughness = o.userData.baseRough;
+      m.emissive.setHex(0x000000);
+    } else if(mode === 'technical'){
+      m.wireframe = false;
+      m.color.setHex(0xe8f1fb);
+      m.metalness = 0.0; m.roughness = 1.0;
+      m.emissive.setHex(0x0a1420);
+    } else if(mode === 'shaded'){
+      m.wireframe = false;
+      m.color.setHex(o.userData.baseColor);
+      m.metalness = 0.05; m.roughness = 0.95;
+      m.emissive.setHex(0x000000);
+    } else {
+      m.wireframe = false;
+      m.color.setHex(o.userData.baseColor);
+      m.metalness = o.userData.baseMetal; m.roughness = o.userData.baseRough;
+      m.emissive.setHex(0x000000);
+    }
+  });
+  edgeGroup.visible = (mode === 'technical' || state.showEdges);
+  $('#viewlabel').textContent =
+    (usingOrtho ? 'Orthographic' : 'Perspective') + ' · ' +
+    mode.charAt(0).toUpperCase() + mode.slice(1);
+}
+
+/* ---------- ghost outer skin (show wall thickness) ---------- */
+function applyGhost(){
+  const on = $('#ghostSkin') ? $('#ghostSkin').checked : false;
+  if(!modelRoot) return;
+  modelRoot.traverse(o => {
+    if(o.isMesh && o.userData.role === 'outerSkin'){
+      o.material.transparent = on;
+      o.material.opacity = on ? 0.22 : 1.0;
+      o.material.depthWrite = !on;
+      o.material.needsUpdate = true;
+    }
+  });
+}
+
+/* ---------- section / clipping ---------- */
+function applyClipping(){
+  const planes = clippingEnabled ? [clipPlane] : [];
+  if(!modelRoot) return;
+  modelRoot.traverse(o => {
+    if(o.isMesh && o.material) o.material.clippingPlanes = planes;
+  });
+}
+
+/* ---------- camera ---------- */
+function fitView(){
+  if(!modelRoot) return;
+  const box = new THREE.Box3().setFromObject(modelRoot);
+  if(box.isEmpty()) return;
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const dist = maxDim * 1.6;
+  controls.target.copy(center);
+  camera.position.set(center.x + dist*0.65, center.y + dist*0.45, center.z + dist*0.75);
+  if(usingOrtho){
+    const d = maxDim * 0.85;
+    const aspect = canvas.clientWidth / canvas.clientHeight;
+    orthoCam.left = -d*aspect; orthoCam.right = d*aspect;
+    orthoCam.top = d; orthoCam.bottom = -d;
+    orthoCam.updateProjectionMatrix();
+  }
+  camera.lookAt(center);
+  controls.update();
+  applyDisplayMode();
+}
+
+function setView(name){
+  if(!modelRoot) return;
+  const box = new THREE.Box3().setFromObject(modelRoot);
+  const c = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const d = Math.max(size.x, size.y, size.z) * 1.7;
+  controls.target.copy(c);
+  const dirs = {
+    front:[0,0,1], rear:[0,0,-1], top:[0,1,0], bottom:[0,-1,0],
+    left:[-1,0,0], right:[1,0,0], iso:[0.7,0.5,0.8]
+  };
+  const v = dirs[name] || dirs.iso;
+  camera.position.set(c.x + v[0]*d, c.y + v[1]*d, c.z + v[2]*d);
+  camera.up.set(0,1,0);
+  camera.lookAt(c);
+  controls.update();
+  $('#viewlabel').textContent =
+    (usingOrtho ? 'Orthographic' : 'Perspective') + ' · ' + name.toUpperCase();
+}
+
+function toggleOrtho(){
+  const target = controls.target.clone();
+  const pos = camera.position.clone();
+  usingOrtho = !usingOrtho;
+  if(usingOrtho){
+    const box = new THREE.Box3().setFromObject(modelRoot);
+    const size = box.getSize(new THREE.Vector3());
+    const d = Math.max(size.x, size.y, size.z) * 0.8;
+    const aspect = canvas.clientWidth / canvas.clientHeight;
+    orthoCam.left = -d*aspect; orthoCam.right = d*aspect;
+    orthoCam.top = d; orthoCam.bottom = -d;
+    orthoCam.updateProjectionMatrix();
+    camera = orthoCam;
+  } else {
+    camera = perspCam;
+  }
+  camera.position.copy(pos);
+  controls.object = camera;
+  controls.target.copy(target);
+  controls.update();
+  applyDisplayMode();
+}
+
+/* =========================================================
+   6. SELECTION, TREE & MEASUREMENT
+   ========================================================= */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+function pickComponent(ev){
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((ev.clientX - rect.left)/rect.width)*2 - 1;
+  pointer.y = -((ev.clientY - rect.top)/rect.height)*2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  if(!modelRoot) return null;
+  const hits = raycaster.intersectObject(modelRoot, true).filter(h => h.object.isMesh);
+  if(!hits.length) return null;
+  let o = hits[0].object;
+  while(o && !o.userData.isComponent) o = o.parent;
+  return {group:o, point:hits[0].point};
+}
+
+function selectComponent(name, silent){
+  if(!modelRoot) return;
+  modelRoot.traverse(o => {
+    if(o.isMesh && o.userData.baseColor !== undefined && o.material.emissive){
+      o.material.emissive.setHex(0x000000);
+    }
+  });
+  state.selected = name;
+  const g = modelRoot.children.find(c => c.name === name);
+  if(g){
+    g.traverse(o => {
+      if(o.isMesh && o.material && o.material.emissive) o.material.emissive.setHex(0x11305c);
+    });
+    const meshes = [];
+    g.traverse(o => { if(o.isMesh) meshes.push(o); });
+    const info = meshes.map(m => {
+      const pos = m.geometry.attributes.position;
+      return `· ${m.name || 'mesh'} — ${pos.count.toLocaleString()} verts`;
+    }).join('<br>');
+    let extra = '';
+    if(g.userData.note) extra += `<br><span style="color:var(--dim)">${g.userData.note}</span>`;
+    if(name === 'Fuselage'){
+      extra += `<br><span style="color:var(--acc2)">Skin thickness: ` +
+        `${(state.params.fuselageThickness*1000).toFixed(0)} mm ` +
+        `(${state.params.fuselageThickness.toFixed(3)} m)</span>`;
+    }
+    $('#selinfo').innerHTML =
+      `<b style="color:#e8f1fb">${name}</b><br>` +
+      `<span style="color:var(--dim)">type: ${g.userData.type || 'part'}</span><br>` +
+      (info || '<span style="color:var(--dim)">(no visible meshes)</span>') + extra;
+  } else {
+    $('#selinfo').textContent = 'Nothing selected';
+  }
+  renderTree();
+}
+
+let downPos = null;
+canvas.addEventListener('pointerdown', e => { downPos = {x:e.clientX, y:e.clientY}; });
+canvas.addEventListener('pointerup', e => {
+  if(!downPos) return;
+  const moved = Math.hypot(e.clientX-downPos.x, e.clientY-downPos.y);
+  downPos = null;
+  if(moved > 4) return;
+  const hit = pickComponent(e);
+  if(state.measureMode && hit){ addMeasurePoint(hit.point); return; }
+  if(hit) selectComponent(hit.group.name);
+  else selectComponent(null);
+});
+
+function addMeasurePoint(pt){
+  state.measurePoints.push(pt.clone());
+  const sph = new THREE.Mesh(
+    new THREE.SphereGeometry(Math.max(0.12, (state.params.length||20)*0.004), 10, 8),
+    new THREE.MeshBasicMaterial({color:0x22d3ee})
+  );
+  sph.position.copy(pt);
+  measureGroup.add(sph);
+  if(state.measurePoints.length === 2){
+    const [a,b] = state.measurePoints;
+    const d = a.distanceTo(b);
+    const geo = new THREE.BufferGeometry().setFromPoints([a,b]);
+    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({color:0x22d3ee}));
+    measureGroup.add(line);
+    $('#mres').innerHTML =
+      `Δ = <b>${(d*1000).toFixed(1)} mm</b> (${d.toFixed(3)} m)<br>` +
+      `Δx=${(b.x-a.x).toFixed(3)}  Δy=${(b.y-a.y).toFixed(3)}  Δz=${(b.z-a.z).toFixed(3)}`;
+    state.measurePoints = [];
+    log(`Measurement: ${(d*1000).toFixed(2)} mm`, 'info');
+  } else {
+    $('#mres').textContent = 'Pick second point…';
+  }
+}
+function clearMeasure(){
+  while(measureGroup.children.length){
+    const c = measureGroup.children.pop();
+    if(c.geometry) c.geometry.dispose();
+    if(c.material) c.material.dispose();
+  }
+  state.measurePoints = [];
+  $('#mres').textContent = '—';
+}
+
+/* =========================================================
+   7. UI RENDERING
+   ========================================================= */
+function renderLibrary(filter=''){
+  const f = filter.toLowerCase();
+  const el = $('#libList');
+  el.innerHTML = '';
+  DB.filter(a => !f || (a.name + ' ' + a.mfr + ' ' + a.cat).toLowerCase().includes(f))
+    .forEach(a => {
+      const d = document.createElement('div');
+      d.className = 'ac-card';
+      d.innerHTML = `
+        <div class="nm">${a.name}</div>
+        <div class="mf">${a.mfr} · ${a.cat}</div>
+        <div class="sp">
+          <span>Span <b>${a.specs.span}</b></span>
+          <span>Len <b>${a.specs.length}</b></span>
+        </div>
+        <div style="margin-top:5px"><span class="badge">${a.accuracy.split(' ')[0]}</span></div>`;
+      d.onclick = () => openAircraft(a.id);
+      el.appendChild(d);
+    });
+}
+
+function renderHome(){
+  const el = $('#homeGrid');
+  el.innerHTML = '';
+  DB.forEach(a => {
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerHTML = `
+      <h4>${a.name}</h4>
+      <div class="m">${a.mfr} · ${a.cat}</div>
+      <div class="rowline"><span>Wingspan</span><b>${a.specs.span}</b></div>
+      <div class="rowline"><span>Length</span><b>${a.specs.length}</b></div>
+      <div class="rowline"><span>Engines</span><b>${a.specs.engines}</b></div>
+      <div class="rowline"><span>Accuracy</span><b style="color:#4ade80">${a.accuracy.split('(')[0].trim()}</b></div>`;
+    d.onclick = () => openAircraft(a.id);
+    el.appendChild(d);
+  });
+}
+
+function renderTree(){
+  const el = $('#tree');
+  if(!el) return;
+  el.innerHTML = '';
+  if(!modelRoot) return;
+  const rootRow = document.createElement('div');
+  rootRow.className = 'tree-row';
+  rootRow.innerHTML = `<span class="eye">▣</span><span class="nm"><b>${modelRoot.name}</b></span>`;
+  el.appendChild(rootRow);
+  modelRoot.children.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'tree-row' + (g.name === state.selected ? ' sel' : '');
+    row.style.paddingLeft = '16px';
+    row.innerHTML = `<span class="eye ${g.visible?'':'off'}">${g.visible?'◉':'○'}</span>
+      <span class="nm">${g.name}</span>`;
+    row.querySelector('.eye').onclick = (e) => {
+      e.stopPropagation();
+      g.visible = !g.visible;
+      renderTree();
+    };
+    row.onclick = () => selectComponent(g.name);
+    el.appendChild(row);
+  });
+}
+
+function updateInfoPanel(){
+  const ac = currentAC();
+  const p = state.params;
+  const box = modelRoot ? new THREE.Box3().setFromObject(modelRoot) : null;
+  const size = box && !box.isEmpty() ? box.getSize(new THREE.Vector3()) : new THREE.Vector3();
+  $('#info').innerHTML = `
+    <div class="prop"><span>Aircraft</span><span>${ac.name}</span></div>
+    <div class="prop"><span>Manufacturer</span><span>${ac.mfr}</span></div>
+    <div class="prop"><span>Category</span><span>${ac.cat}</span></div>
+    <div class="prop"><span>Reference span</span><span>${ac.specs.span}</span></div>
+    <div class="prop"><span>Reference length</span><span>${ac.specs.length}</span></div>
+    <div class="prop"><span>Engines</span><span>${ac.specs.engines}</span></div>
+    <div class="prop"><span>Accuracy</span><span style="color:#4ade80">${ac.accuracy}</span></div>
+    <div class="prop"><span>Source</span><span>${ac.source}</span></div>
+    <hr style="border:none;border-top:1px solid var(--line);margin:6px 0">
+    <div class="prop"><span>Skin thickness</span><span style="color:var(--acc2)">${(p.fuselageThickness*1000).toFixed(0)} mm</span></div>
+    <div class="prop"><span>Nose style</span><span>${p.noseStyle}</span></div>
+    <div class="prop"><span>Wing style</span><span>${p.wingStyle}</span></div>
+    <div class="prop"><span>Windows</span><span>${p.windowMode === 'holes' ? 'cut holes' : p.windowMode}</span></div>
+    <div class="prop"><span>Model bbox X</span><span>${size.x.toFixed(2)} m</span></div>
+    <div class="prop"><span>Model bbox Y</span><span>${size.y.toFixed(2)} m</span></div>
+    <div class="prop"><span>Model bbox Z</span><span>${size.z.toFixed(2)} m</span></div>
+    <div class="prop"><span>Triangles</span><span>${(state.triCount||0).toLocaleString()}</span></div>`;
+}
+
+/* ---------- parameter schema ---------- */
+const PARAM_SCHEMA = [
+  {k:'length', l:'Fuselage length', min:3, max:100, step:0.1, u:'m'},
+  {k:'fuselageRadius', l:'Fuselage radius', min:0.06, max:5, step:0.01, u:'m'},
+  {k:'fuselageThickness', l:'Fuselage skin thickness', min:0.004, max:0.9, step:0.002, u:'m'},
+  {k:'noseLength', l:'Nose length (frac)', min:0.05, max:0.4, step:0.005, u:''},
+  {k:'tailLength', l:'Tail length (frac)', min:0.08, max:0.4, step:0.005, u:''},
+  {k:'wingSpan', l:'Wingspan', min:1, max:110, step:0.1, u:'m'},
+  {k:'wingSweep', l:'Wing sweep', min:0, max:75, step:0.5, u:'°'},
+  {k:'wingRootChord', l:'Root chord', min:0.2, max:30, step:0.05, u:'m'},
+  {k:'wingTipChord', l:'Tip chord', min:0.05, max:10, step:0.05, u:'m'},
+  {k:'wingThickness', l:'Wing t/c ratio', min:0.03, max:0.22, step:0.005, u:''},
+  {k:'wingDihedral', l:'Dihedral', min:-8, max:12, step:0.5, u:'°'},
+  {k:'wingRootX', l:'Wing root X', min:-35, max:35, step:0.1, u:'m'},
+  {k:'wingY', l:'Wing vertical offset', min:-1, max:1.2, step:0.05, u:'·r'},
+  {k:'hStabSpan', l:'H-stab span', min:0, max:40, step:0.1, u:'m'},
+  {k:'hStabChord', l:'H-stab chord', min:0, max:15, step:0.05, u:'m'},
+  {k:'hStabX', l:'H-stab X', min:-50, max:0, step:0.1, u:'m'},
+  {k:'vStabHeight', l:'V-stab height', min:0, max:18, step:0.1, u:'m'},
+  {k:'vStabChord', l:'V-stab chord', min:0, max:16, step:0.05, u:'m'},
+  {k:'vStabX', l:'V-stab X', min:-50, max:0, step:0.1, u:'m'},
+  {k:'engineCount', l:'Engine count', min:0, max:4, step:1, u:''},
+  {k:'engineDiameter', l:'Engine diameter', min:0.2, max:5, step:0.05, u:'m'},
+  {k:'engineLength', l:'Engine length', min:0.3, max:10, step:0.05, u:'m'},
+  {k:'engineDrop', l:'Engine drop below wing', min:0, max:6, step:0.05, u:'m'},
+  {k:'windowCount', l:'Window count / row', min:0, max:80, step:1, u:''},
+  {k:'gearTrack', l:'Landing gear track', min:0.5, max:22, step:0.1, u:'m'},
+  {k:'gearHeight', l:'Landing gear height', min:0.05, max:8, step:0.05, u:'m'}
+];
+
+function renderParams(){
+  const el = $('#params');
+  el.innerHTML = '';
+  const p = state.params;
+  PARAM_SCHEMA.forEach(s => {
+    if(p[s.k] === undefined) return;
+    const div = document.createElement('div');
+    div.className = 'param';
+    div.innerHTML = `
+      <label>${s.l}</label>
+      <div class="prow">
+        <input type="range" min="${s.min}" max="${s.max}" step="${s.step}"
+               value="${p[s.k]}" data-pk="${s.k}">
+        <input type="number" class="pnum" min="${s.min}" max="${s.max}" step="${s.step}"
+               value="${s.step >= 1 ? p[s.k] : (+p[s.k]).toFixed(3)}" data-pk="${s.k}">
+        <span class="punit">${s.u}</span>
+      </div>`;
+    const rng = div.querySelector('input[type=range]');
+    const num = div.querySelector('input[type=number]');
+
+    const apply = (raw, from) => {
+      let v = parseFloat(raw);
+      if(!isFinite(v)) return;
+      v = clamp(v, s.min, s.max);
+      if(s.step >= 1) v = Math.round(v);
+      state.params[s.k] = v;
+      if(from !== 'range') rng.value = v;
+      if(from !== 'num')   num.value = (s.step >= 1 ? v : +v.toFixed(3));
+      queueRebuild();
+    };
+    rng.oninput = () => apply(rng.value, 'range');
+    num.oninput = () => apply(num.value, 'num');
+    rng.onchange = () => pushHistory();
+    num.onchange = () => { apply(num.value, 'num'); pushHistory(); };
+    el.appendChild(div);
+  });
+}
+
+/* ---------- history ---------- */
+function pushHistory(){
+  const snap = JSON.stringify(state.params);
+  if(state.history[state.histIdx] === snap) return;
+  state.history = state.history.slice(0, state.histIdx+1);
+  state.history.push(snap);
+  if(state.history.length > 60) state.history.shift();
+  state.histIdx = state.history.length - 1;
+}
+function undo(){
+  if(state.histIdx <= 0){ log('Nothing to undo', 'warn'); return; }
+  state.histIdx--;
+  state.params = JSON.parse(state.history[state.histIdx]);
+  renderParams(); syncStyleSelects(); queueRebuild(); log('Undo', 'info');
+}
+function redo(){
+  if(state.histIdx >= state.history.length-1){ log('Nothing to redo', 'warn'); return; }
+  state.histIdx++;
+  state.params = JSON.parse(state.history[state.histIdx]);
+  renderParams(); syncStyleSelects(); queueRebuild(); log('Redo', 'info');
+}
+
+function syncStyleSelects(){
+  if($('#noseStyle'))   $('#noseStyle').value   = state.params.noseStyle || 'boeing';
+  if($('#wingStyle'))   $('#wingStyle').value   = state.params.wingStyle || 'raked';
+  if($('#windowMode'))  $('#windowMode').value  = state.params.windowMode || 'holes';
+}
+
+/* =========================================================
+   8. EXPORT — STL
+   ========================================================= */
+function collectTriangles(root, scale, onlyVisible=true){
+  const tris = [];
+  root.updateMatrixWorld(true);
+  root.traverse(o => {
+    if(!o.isMesh || o.userData.isEdge) return;
+    if(onlyVisible){
+      let v = true, pp = o;
+      while(pp){ if(!pp.visible){ v = false; break; } pp = pp.parent; }
+      if(!v) return;
+    }
+    const g = o.geometry;
+    const pos = g.attributes.position;
+    if(!pos) return;
+    const idx = g.index;
+    const m = o.matrixWorld;
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+    const count = idx ? idx.count : pos.count;
+    for(let i=0;i<count;i+=3){
+      const i0 = idx ? idx.getX(i)   : i;
+      const i1 = idx ? idx.getX(i+1) : i+1;
+      const i2 = idx ? idx.getX(i+2) : i+2;
+      a.fromBufferAttribute(pos, i0).applyMatrix4(m).multiplyScalar(scale);
+      b.fromBufferAttribute(pos, i1).applyMatrix4(m).multiplyScalar(scale);
+      c.fromBufferAttribute(pos, i2).applyMatrix4(m).multiplyScalar(scale);
+      tris.push([a.x,a.y,a.z, b.x,b.y,b.z, c.x,c.y,c.z]);
+    }
+  });
+  return tris;
+}
+
+function exportSTL(tris, binary, name){
+  if(!tris.length) throw new Error('No geometry to export');
+  if(binary){
+    const buf = new ArrayBuffer(84 + tris.length*50);
+    const dv = new DataView(buf);
+    const header = `GODSON CAD Studio - ${name}`.slice(0, 79);
+    for(let i=0;i<header.length;i++) dv.setUint8(i, header.charCodeAt(i));
+    dv.setUint32(80, tris.length, true);
+    let off = 84;
+    const n = new THREE.Vector3(), ab = new THREE.Vector3(), ac = new THREE.Vector3();
+    for(const t of tris){
+      ab.set(t[3]-t[0], t[4]-t[1], t[5]-t[2]);
+      ac.set(t[6]-t[0], t[7]-t[1], t[8]-t[2]);
+      n.crossVectors(ab, ac).normalize();
+      dv.setFloat32(off, n.x, true); dv.setFloat32(off+4, n.y, true); dv.setFloat32(off+8, n.z, true);
+      off += 12;
+      for(let k=0;k<9;k++){ dv.setFloat32(off, t[k], true); off += 4; }
+      dv.setUint16(off, 0, true); off += 2;
+    }
+    return new Blob([buf], {type:'model/stl'});
+  } else {
+    const out = [`solid ${name.replace(/\s+/g,'_')}`];
+    const n = new THREE.Vector3(), ab = new THREE.Vector3(), ac = new THREE.Vector3();
+    for(const t of tris){
+      ab.set(t[3]-t[0], t[4]-t[1], t[5]-t[2]);
+      ac.set(t[6]-t[0], t[7]-t[1], t[8]-t[2]);
+      n.crossVectors(ab, ac).normalize();
+      out.push(`  facet normal ${n.x.toExponential(6)} ${n.y.toExponential(6)} ${n.z.toExponential(6)}`);
+      out.push('    outer loop');
+      out.push(`      vertex ${t[0].toExponential(6)} ${t[1].toExponential(6)} ${t[2].toExponential(6)}`);
+      out.push(`      vertex ${t[3].toExponential(6)} ${t[4].toExponential(6)} ${t[5].toExponential(6)}`);
+      out.push(`      vertex ${t[6].toExponential(6)} ${t[7].toExponential(6)} ${t[8].toExponential(6)}`);
+      out.push('    endloop');
+      out.push('  endfacet');
+    }
+    out.push(`endsolid ${name.replace(/\s+/g,'_')}`);
+    return new Blob([out.join('\n')], {type:'model/stl'});
+  }
+}
+
+/* =========================================================
+   9. EXPORT — STEP (faceted B-rep)
+   ========================================================= */
+function stepNum(n){
+  if(!isFinite(n)) n = 0;
+  let s = n.toFixed(6);
+  if(s.indexOf('.') >= 0){
+    s = s.replace(/0+$/,'');
+    if(s.endsWith('.')) s += '0';
+  } else s += '.';
+  if(s === '-0.0') s = '0.0';
+  return s;
+}
+
+function generateSTEP(targets, opts){
+  const scale = opts.units === 'in' ? 39.37007874015748 : 1000;
+  const parts = targets.map(t => ({
+    name: (t.name || 'Part').replace(/'/g,''),
+    tris: collectTriangles(t, scale)
+  })).filter(p => p.tris.length > 0);
+
+  const totalTris = parts.reduce((s,p)=>s+p.tris.length, 0);
+  if(totalTris === 0) throw new Error('No geometry to export');
+  if(totalTris > 15000) throw new Error(
+    `Model has ${totalTris.toLocaleString()} triangles — too large for a single B-rep STEP export. ` +
+    `Export a single component, or lower the mesh quality slider.`);
+
+  let id = 0;
+  const lines = [];
+  const add = s => { id++; lines.push(`#${id}=${s};`); return id; };
+  const fname = (opts.name || 'aircraft').replace(/[^A-Za-z0-9_.-]/g,'_');
+  const now = new Date().toISOString().replace(/\.\d+Z$/,'');
+
+  const appCtx = add("APPLICATION_CONTEXT('core data for automotive mechanical design processes')");
+  add(`APPLICATION_PROTOCOL_DEFINITION('international standard','automotive_design',2000,#${appCtx})`);
+  const prodCtx = add(`PRODUCT_CONTEXT('',#${appCtx},'mechanical')`);
+  const prod = add(`PRODUCT('${fname}','${fname}','GODSON CAD export',(#${prodCtx}))`);
+  const pdf = add(`PRODUCT_DEFINITION_FORMATION('','',#${prod})`);
+  const pdCtx = add(`PRODUCT_DEFINITION_CONTEXT('part definition',#${appCtx},'design')`);
+  const pd = add(`PRODUCT_DEFINITION('design','',#${pdf},#${pdCtx})`);
+  const pds = add(`PRODUCT_DEFINITION_SHAPE('','',#${pd})`);
+
+  const mmUnit = add("(LENGTH_UNIT()NAMED_UNIT(*)SI_UNIT(.MILLI.,.METRE.))");
+  const angleUnit = add("(NAMED_UNIT(*)PLANE_ANGLE_UNIT()SI_UNIT($,.RADIAN.))");
+  const solidUnit = add("(NAMED_UNIT(*)SI_UNIT($,.STERADIAN.)SOLID_ANGLE_UNIT())");
+  let lengthUnit = mmUnit;
+  if(opts.units === 'in'){
+    const dimExp = add("DIMENSIONAL_EXPONENTS(1.,0.,0.,0.,0.,0.,0.)");
+    const mwu = add(`MEASURE_WITH_UNIT(LENGTH_MEASURE(25.4),#${mmUnit})`);
+    lengthUnit = add(`(CONVERSION_BASED_UNIT('INCH',#${mwu})LENGTH_UNIT()NAMED_UNIT(#${dimExp}))`);
+  }
+  const unc = add(
+    `UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(1.E-6),#${mmUnit},'distance_accuracy_value','confusion accuracy')`);
+  const geoCtx = add(
+    `(GEOMETRIC_REPRESENTATION_CONTEXT(3)` +
+    `GLOBAL_UNCERTAINTY_ASSIGNED_CONTEXT((#${unc}))` +
+    `GLOBAL_UNIT_ASSIGNED_CONTEXT((#${lengthUnit},#${angleUnit},#${solidUnit}))` +
+    `REPRESENTATION_CONTEXT('3D',''))`);
+
+  const solidIds = [];
+  for(const part of parts){
+    const vMap = new Map();
+    const eMap = new Map();
+    const faces = [];
+
+    const getVertex = (x, y, z) => {
+      const key = x.toFixed(5) + '|' + y.toFixed(5) + '|' + z.toFixed(5);
+      let v = vMap.get(key);
+      if(!v){
+        const pt = add(`CARTESIAN_POINT('',(${stepNum(x)},${stepNum(y)},${stepNum(z)}))`);
+        const vtx = add(`VERTEX_POINT('',#${pt})`);
+        v = {vtx, pt, coord:[x,y,z]};
+        vMap.set(key, v);
+      }
+      return v;
+    };
+
+    for(const t of part.tris){
+      const A = getVertex(t[0], t[1], t[2]);
+      const B = getVertex(t[3], t[4], t[5]);
+      const C = getVertex(t[6], t[7], t[8]);
+      const ring = [A, B, C];
+      const oeIds = [];
+
+      for(let k=0;k<3;k++){
+        const from = ring[k], to = ring[(k+1)%3];
+        const key = from.vtx < to.vtx ? `${from.vtx}_${to.vtx}` : `${to.vtx}_${from.vtx}`;
+        let e = eMap.get(key);
+        if(!e){
+          const d = [to.coord[0]-from.coord[0], to.coord[1]-from.coord[1], to.coord[2]-from.coord[2]];
+          const len = Math.hypot(d[0],d[1],d[2]) || 1;
+          const dir = add(`DIRECTION('',(${stepNum(d[0]/len)},${stepNum(d[1]/len)},${stepNum(d[2]/len)}))`);
+          const vec = add(`VECTOR('',#${dir},1.)`);
+          const lineId = add(`LINE('',#${from.pt},#${vec})`);
+          const ec = add(`EDGE_CURVE('',#${from.vtx},#${to.vtx},#${lineId},.T.)`);
+          e = {id: ec, from: from.vtx};
+          eMap.set(key, e);
+        }
+        const same = (e.from === from.vtx);
+        oeIds.push(add(`ORIENTED_EDGE('',*,*,#${e.id},${same ? '.T.' : '.F.'})`));
+      }
+
+      const ux = B.coord[0]-A.coord[0], uy = B.coord[1]-A.coord[1], uz = B.coord[2]-A.coord[2];
+      const vx = C.coord[0]-A.coord[0], vy = C.coord[1]-A.coord[1], vz = C.coord[2]-A.coord[2];
+      let nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
+      const nl = Math.hypot(nx,ny,nz) || 1;
+      nx/=nl; ny/=nl; nz/=nl;
+      const ul = Math.hypot(ux,uy,uz) || 1;
+      const refDir = add(`DIRECTION('',(${stepNum(ux/ul)},${stepNum(uy/ul)},${stepNum(uz/ul)}))`);
+      const nrmDir = add(`DIRECTION('',(${stepNum(nx)},${stepNum(ny)},${stepNum(nz)}))`);
+      const ax = add(`AXIS2_PLACEMENT_3D('',#${A.pt},#${nrmDir},#${refDir})`);
+      const plane = add(`PLANE('',#${ax})`);
+      const loop = add(`EDGE_LOOP('',(${oeIds.map(i=>'#'+i).join(',')}))`);
+      const bound = add(`FACE_OUTER_BOUND('',#${loop},.T.)`);
+      faces.push(add(`ADVANCED_FACE('',(#${bound}),#${plane},.T.)`));
+    }
+
+    const shell = add(`CLOSED_SHELL('',(${faces.map(f=>'#'+f).join(',')}))`);
+    solidIds.push(add(`MANIFOLD_SOLID_BREP('${part.name}',#${shell})`));
+  }
+
+  const origin = add("CARTESIAN_POINT('',(0.,0.,0.))");
+  const zDir = add("DIRECTION('',(0.,0.,1.))");
+  const xDir = add("DIRECTION('',(1.,0.,0.))");
+  const originAxis = add(`AXIS2_PLACEMENT_3D('',#${origin},#${zDir},#${xDir})`);
+  const items = solidIds.map(i=>'#'+i).concat(['#'+originAxis]).join(',');
+  const brepRep = add(`ADVANCED_BREP_SHAPE_REPRESENTATION('${fname}',(${items}),#${geoCtx})`);
+  add(`SHAPE_DEFINITION_REPRESENTATION(#${pds},#${brepRep})`);
+
+  let schema;
+  if(opts.schema === 'ap242')
+    schema = "AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF { 1 0 10303 442 1 1 4 }";
+  else if(opts.schema === 'ap203')
+    schema = "CONFIG_CONTROL_DESIGN { 1 0 10303 203 1 1 }";
+  else
+    schema = "AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }";
+
+  const header = [
+    'ISO-10303-21;',
+    'HEADER;',
+    `FILE_DESCRIPTION(('GODSON Aircraft CAD Design Studio export'),'2;1');`,
+    `FILE_NAME('${fname}.step','${now}',('GODSON CAD'),('GODSON CAD STUDIO'),`,
+    `  'GODSON STEP writer v1.0','GODSON Aircraft CAD Design Studio',' ');`,
+    `FILE_SCHEMA(('${schema}'));`,
+    'ENDSEC;',
+    'DATA;'
+  ].join('\n');
+
+  const footer = ['ENDSEC;', 'END-ISO-10303-21;', ''].join('\n');
+  const text = header + '\n' + lines.join('\n') + '\n' + footer;
+
+  return {
+    text,
+    stats:{ parts: parts.length, solids: solidIds.length, triangles: totalTris,
+            entities: id, bytes: text.length }
+  };
+}
+
+/* =========================================================
+   10. TECHNICAL DRAWING
+   ========================================================= */
+function collectEdges(root){
+  const segs = [];
+  root.updateMatrixWorld(true);
+  root.traverse(o => {
+    if(!o.isMesh || o.userData.isEdge) return;
+    const eg = new THREE.EdgesGeometry(o.geometry, 28);
+    const pos = eg.attributes.position;
+    const m = o.matrixWorld;
+    const a = new THREE.Vector3(), b = new THREE.Vector3();
+    for(let i=0;i<pos.count;i+=2){
+      a.fromBufferAttribute(pos, i).applyMatrix4(m);
+      b.fromBufferAttribute(pos, i+1).applyMatrix4(m);
+      segs.push([a.x,a.y,a.z, b.x,b.y,b.z]);
+    }
+    eg.dispose();
+  });
+  return segs;
+}
+
+const VIEWS = [
+  {name:'FRONT',  p:(x,y,z)=>[x,y]},
+  {name:'SIDE',   p:(x,y,z)=>[-z,y]},
+  {name:'TOP',    p:(x,y,z)=>[x,-z]},
+  {name:'ISO',    p:(x,y,z)=>[(x*0.86 - z*0.5), (y*0.9 + (x*0.25 + z*0.43))]}
+];
+
+function generateDrawingSVG(){
+  if(!modelRoot) throw new Error('No model loaded');
+  const ac = currentAC();
+  const segs = collectEdges(modelRoot);
+  if(!segs.length) throw new Error('No edges to draw');
+
+  const box = new THREE.Box3().setFromObject(modelRoot);
+  const size = box.getSize(new THREE.Vector3());
+
+  const W = 1180, H = 840;
+  const cells = [
+    {x:40,  y:70,  w:540, h:320},
+    {x:600, y:70,  w:540, h:320},
+    {x:40,  y:410, w:540, h:320},
+    {x:600, y:410, w:540, h:320}
+  ];
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`;
+  svg += `<rect width="${W}" height="${H}" fill="#ffffff"/>`;
+  svg += `<rect x="10" y="10" width="${W-20}" height="${H-20}" fill="none" stroke="#111" stroke-width="2"/>`;
+  svg += `<rect x="16" y="16" width="${W-32}" height="${H-32}" fill="none" stroke="#111" stroke-width="0.8"/>`;
+  svg += `<text x="28" y="48" font-family="Arial" font-size="20" font-weight="bold">${esc(ac.name)}</text>`;
+  svg += `<text x="28" y="64" font-family="Arial" font-size="11" fill="#444">GODSON AIRCRAFT CAD DESIGN STUDIO · ${esc(ac.accuracy)}</text>`;
+
+  VIEWS.forEach((v, vi) => {
+    const cell = cells[vi];
+    let minX=Infinity, maxX=-Infinity, minY=Infinity, maxY=-Infinity;
+    const projected = segs.map(s => {
+      const a = v.p(s[0], s[1], s[2]);
+      const b = v.p(s[3], s[4], s[5]);
+      minX = Math.min(minX, a[0], b[0]); maxX = Math.max(maxX, a[0], b[0]);
+      minY = Math.min(minY, a[1], b[1]); maxY = Math.max(maxY, a[1], b[1]);
+      return [a[0], a[1], b[0], b[1]];
+    });
+    const pad = 26;
+    const sc = Math.min((cell.w - pad*2)/Math.max(maxX-minX, 1e-6),
+                        (cell.h - pad*2)/Math.max(maxY-minY, 1e-6));
+    const ox = cell.x + pad + ((cell.w - pad*2) - (maxX-minX)*sc)/2;
+    const oy = cell.y + pad + ((cell.h - pad*2) - (maxY-minY)*sc)/2;
+    const tx = px => ox + (px - minX)*sc;
+    const ty = py => oy + (maxY - py)*sc;
+
+    svg += `<rect x="${cell.x}" y="${cell.y}" width="${cell.w}" height="${cell.h}" fill="none" stroke="#999" stroke-width="0.6"/>`;
+    svg += `<text x="${cell.x+6}" y="${cell.y+14}" font-family="Arial" font-size="11" font-weight="bold" fill="#333">${v.name} VIEW</text>`;
+
+    let pathData = '';
+    for(const s of projected){
+      pathData += `M${tx(s[0]).toFixed(2)} ${ty(s[1]).toFixed(2)}L${tx(s[2]).toFixed(2)} ${ty(s[3]).toFixed(2)}`;
+    }
+    svg += `<path d="${pathData}" stroke="#0b0b0b" stroke-width="0.55" fill="none" stroke-linecap="round"/>`;
+  });
+
+  const tbX = W-380, tbY = H-150;
+  svg += `<rect x="${tbX}" y="${tbY}" width="364" height="134" fill="none" stroke="#111" stroke-width="1.2"/>`;
+  svg += `<line x1="${tbX}" y1="${tbY+34}" x2="${tbX+364}" y2="${tbY+34}" stroke="#111"/>`;
+  svg += `<line x1="${tbX}" y1="${tbY+68}" x2="${tbX+364}" y2="${tbY+68}" stroke="#111"/>`;
+  svg += `<line x1="${tbX}" y1="${tbY+100}" x2="${tbX+364}" y2="${tbY+100}" stroke="#111"/>`;
+  svg += `<line x1="${tbX+182}" y1="${tbY+68}" x2="${tbX+182}" y2="${tbY+134}" stroke="#111"/>`;
+  svg += `<text x="${tbX+8}" y="${tbY+14}" font-family="Arial" font-size="8" fill="#666">TITLE</text>`;
+  svg += `<text x="${tbX+8}" y="${tbY+28}" font-family="Arial" font-size="12" font-weight="bold">${esc(ac.name)}</text>`;
+  svg += `<text x="${tbX+8}" y="${tbY+48}" font-family="Arial" font-size="8" fill="#666">DRAWING No.</text>`;
+  svg += `<text x="${tbX+8}" y="${tbY+62}" font-family="Arial" font-size="11">GDN-${state.aircraftId.toUpperCase()}-${String(state.revision).padStart(3,'0')}</text>`;
+  svg += `<text x="${tbX+8}" y="${tbY+82}" font-family="Arial" font-size="8" fill="#666">SCALE</text>`;
+  svg += `<text x="${tbX+8}" y="${tbY+94}" font-family="Arial" font-size="10">FIT</text>`;
+  svg += `<text x="${tbX+190}" y="${tbY+82}" font-family="Arial" font-size="8" fill="#666">UNITS</text>`;
+  svg += `<text x="${tbX+190}" y="${tbY+94}" font-family="Arial" font-size="10">metres</text>`;
+  svg += `<text x="${tbX+8}" y="${tbY+114}" font-family="Arial" font-size="8" fill="#666">DRAWN</text>`;
+  svg += `<text x="${tbX+8}" y="${tbY+127}" font-family="Arial" font-size="10">${new Date().toISOString().slice(0,10)}</text>`;
+  svg += `<text x="${tbX+190}" y="${tbY+114}" font-family="Arial" font-size="8" fill="#666">REV</text>`;
+  svg += `<text x="${tbX+190}" y="${tbY+127}" font-family="Arial" font-size="10">${state.revision}</text>`;
+
+  const dy = H-150;
+  svg += `<rect x="40" y="${dy}" width="300" height="134" fill="none" stroke="#111" stroke-width="1"/>`;
+  svg += `<text x="48" y="${dy+16}" font-family="Arial" font-size="9" font-weight="bold">OVERALL DIMENSIONS</text>`;
+  [['Overall length', size.x.toFixed(2)+' m'],
+   ['Wingspan', size.z.toFixed(2)+' m'],
+   ['Overall height', size.y.toFixed(2)+' m']].forEach((d, i) => {
+    svg += `<text x="48" y="${dy+36+i*18}" font-family="Arial" font-size="10">${d[0]}</text>`;
+    svg += `<text x="250" y="${dy+36+i*18}" font-family="Arial" font-size="10" font-weight="bold">${d[1]}</text>`;
+  });
+  svg += `<text x="48" y="${dy+100}" font-family="Arial" font-size="8" fill="#666">Projection derived from live model geometry.</text>`;
+  svg += `<text x="48" y="${dy+114}" font-family="Arial" font-size="8" fill="#666">Reference-based / approximate model — not for manufacture.</text>`;
+  svg += `</svg>`;
+  return svg;
+}
+function esc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+function generateDXF(){
+  const segs = collectEdges(modelRoot);
+  const out = ['0','SECTION','2','ENTITIES'];
+  for(const s of segs){
+    out.push('0','LINE','8','0',
+      '10', (s[0]*1000).toFixed(4), '20', (-s[2]*1000).toFixed(4), '30','0.0',
+      '11', (s[3]*1000).toFixed(4), '21', (-s[5]*1000).toFixed(4), '31','0.0');
+  }
+  out.push('0','ENDSEC','0','EOF');
+  return out.join('\n');
+}
+
+/* =========================================================
+   11. ACTION HANDLERS
+   ========================================================= */
+function getExportTargets(){
+  const mode = $('#expTarget').value;
+  if(mode === 'sel'){
+    const g = modelRoot && modelRoot.children.find(c => c.name === state.selected);
+    if(!g) throw new Error('No component selected — select one in the model tree first.');
+    return [g];
+  }
+  return modelRoot ? modelRoot.children.slice() : [];
+}
+
+function doExportSTEP(){
+  try{
+    status('EXPORTING');
+    log('STEP export: validating geometry…', 'info');
+    const targets = getExportTargets();
+    const opts = {
+      units: $('#expUnits').value,
+      schema: $('#expSchema').value,
+      name: `${state.aircraftId}_${state.projectName.replace(/\s+/g,'_')}`
+    };
+    const t0 = performance.now();
+    const res = generateSTEP(targets, opts);
+    const dt = (performance.now()-t0).toFixed(0);
+    if(!res.text || res.text.length < 500) throw new Error('Generated STEP file is empty.');
+    if(!res.text.startsWith('ISO-10303-21;') || !res.text.trim().endsWith('END-ISO-10303-21;'))
+      throw new Error('Generated STEP file failed structural validation.');
+    const blob = new Blob([res.text], {type:'application/step'});
+    download(blob, `${opts.name}_${opts.schema.toUpperCase()}.step`);
+    log(`STEP OK — ${res.stats.solids} solid(s), ${res.stats.triangles.toLocaleString()} faces, ` +
+        `${res.stats.entities.toLocaleString()} entities, ${(blob.size/1048576).toFixed(2)} MB (${dt} ms)`, 'ok');
+    status('READY');
+  }catch(e){
+    log('STEP export failed: ' + e.message, 'err');
+    status('ERROR');
+  }
+}
+
+function doExportSTL(){
+  try{
+    status('EXPORTING');
+    const targets = getExportTargets();
+    const units = $('#expUnits').value;
+    const scale = units === 'in' ? 39.37007874015748 : 1000;
+    let tris = [];
+    for(const t of targets) tris = tris.concat(collectTriangles(t, scale));
+    let bad = 0;
+    for(const t of tris){
+      for(let k=0;k<9;k++) if(!isFinite(t[k])) { bad++; break; }
+    }
+    if(bad) log(`Warning: ${bad} triangles contain non-finite values`, 'warn');
+    const binary = $('#stlFormat').value === 'binary';
+    const name = `${state.aircraftId}_${state.projectName.replace(/\s+/g,'_')}`;
+    const blob = exportSTL(tris, binary, name);
+    download(blob, `${name}_${units}.stl`);
+    log(`STL OK — ${tris.length.toLocaleString()} triangles, ${(blob.size/1048576).toFixed(2)} MB ` +
+        `(${binary?'binary':'ASCII'}, ${units})`, 'ok');
+    log('Note: STL is a mesh format. Very large aircraft may need sectioning before 3D printing.', 'info');
+    status('READY');
+  }catch(e){
+    log('STL export failed: ' + e.message, 'err');
+    status('ERROR');
+  }
+}
+
+function doDrawing(){
+  try{
+    const svg = generateDrawingSVG();
+    download(new Blob([svg], {type:'image/svg+xml'}),
+      `${state.aircraftId}_drawing_rev${state.revision}.svg`);
+    log('Technical drawing sheet generated (SVG) from live model geometry.', 'ok');
+  }catch(e){
+    log('Drawing generation failed: ' + e.message, 'err');
+  }
+}
+
+function openAircraft(id){
+  const ac = DB.find(a => a.id === id);
+  if(!ac) return;
+  state.aircraftId = id;
+  state.params = JSON.parse(JSON.stringify(ac.params));
+  state.selected = null;
+  state.history = []; state.histIdx = -1;
+  clearMeasure();
+  pushHistory();
+  $('#home').style.display = 'none';
+  status('BUILDING');
+  $('#loading').style.display = 'flex';
+  setTimeout(() => {
+    renderParams();
+    syncStyleSelects();
+    rebuild(true);
+    $('#loading').style.display = 'none';
+    status('READY');
+    log(`Loaded ${ac.name} — ${ac.accuracy}`, 'ok');
+    log(`Source: ${ac.source}. Educational/design-visualisation model, not certified engineering data.`, 'info');
+    log(`Skin thickness ${(state.params.fuselageThickness*1000).toFixed(0)} mm · ` +
+        `nose "${state.params.noseStyle}" · wing "${state.params.wingStyle}" · ` +
+        `windows "${state.params.windowMode}"`, 'info');
+  }, 30);
+}
+
+/* =========================================================
+   12. EVENT WIRING
+   ========================================================= */
+document.addEventListener('click', e => {
+  const menuBtn = e.target.closest('#menu .m > button');
+  if(menuBtn){
+    const parent = menuBtn.parentElement;
+    const wasOpen = parent.classList.contains('open');
+    $$('#menu .m').forEach(m => m.classList.remove('open'));
+    if(!wasOpen) parent.classList.add('open');
+    return;
+  }
+  if(!e.target.closest('#menu')) $$('#menu .m').forEach(m => m.classList.remove('open'));
+});
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]');
+  if(!btn) return;
+  const act = btn.dataset.act;
+  switch(act){
+    case 'new': openAircraft('custom'); break;
+    case 'save': saveProject(); break;
+    case 'open': openProjectDialog(); break;
+    case 'home': $('#home').style.display = 'block'; break;
+    case 'undo': undo(); break;
+    case 'redo': redo(); break;
+    case 'reset':
+      state.params = JSON.parse(JSON.stringify(currentAC().params));
+      renderParams(); syncStyleSelects(); pushHistory(); queueRebuild();
+      log('Parameters reset', 'info');
+      break;
+    case 'duplicate': duplicateComponent(); break;
+    case 'delete': deleteComponent(); break;
+    case 'v-iso': setView('iso'); break;
+    case 'v-front': setView('front'); break;
+    case 'v-rear': setView('rear'); break;
+    case 'v-top': setView('top'); break;
+    case 'v-bottom': setView('bottom'); break;
+    case 'v-left': setView('left'); break;
+    case 'v-right': setView('right'); break;
+    case 'fit': fitView(); break;
+    case 'ortho': toggleOrtho(); break;
+    case 'grid': grid.visible = !grid.visible; axes.visible = grid.visible; break;
+    case 'fullscreen':
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+      break;
+    case 'measure':
+      state.measureMode = !state.measureMode;
+      $('#measurebar').style.display = state.measureMode ? 'block' : 'none';
+      if(!state.measureMode) clearMeasure();
+      log('Measure tool ' + (state.measureMode ? 'ON — click two points' : 'OFF'), 'info');
+      break;
+    case 'section':
+      clippingEnabled = !clippingEnabled;
+      $('#secVal').textContent = clippingEnabled ? 'on' : 'off';
+      applyClipping();
+      break;
+    case 'edges':
+      state.showEdges = !state.showEdges;
+      applyDisplayMode();
+      break;
+    case 'drawing': doDrawing(); break;
+    case 'exp-step': doExportSTEP(); break;
+    case 'exp-stl': doExportSTL(); break;
+    case 'exp-svg': doDrawing(); break;
+    case 'exp-dxf':
+      try{
+        download(new Blob([generateDXF()], {type:'application/dxf'}),
+          `${state.aircraftId}_topview.dxf`);
+        log('DXF (top view projection) exported.', 'ok');
+      }catch(err){ log('DXF export failed: ' + err.message, 'err'); }
+      break;
+    case 'about': showAbout(); break;
+    case 'solid': case 'shaded': case 'wire': case 'tech':
+      state.displayMode = act === 'wire' ? 'wireframe' : act === 'tech' ? 'technical' : act;
+      $$('.shd').forEach(b => b.classList.toggle('on', b.dataset.act === act));
+      applyDisplayMode();
+      break;
+  }
+});
+
+$$('.tabs button').forEach(b => {
+  b.onclick = () => {
+    $$('.tabs button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    $('#tab-lib').style.display = b.dataset.tab === 'lib' ? 'block' : 'none';
+    $('#tab-tree').style.display = b.dataset.tab === 'tree' ? 'block' : 'none';
+  };
+});
+
+$('#search').oninput = e => renderLibrary(e.target.value);
+$('#btnHome').onclick = () => { $('#home').style.display = 'block'; renderHome(); };
+$('#startDesigning').onclick = () => { $('#home').style.display = 'none'; openAircraft('b787'); };
+$('#btnResetP').onclick = () => {
+  state.params = JSON.parse(JSON.stringify(currentAC().params));
+  renderParams(); syncStyleSelects(); pushHistory(); queueRebuild();
+};
+
+/* style selects */
+$('#noseStyle').onchange = e => {
+  state.params.noseStyle = e.target.value;
+  pushHistory(); queueRebuild();
+  log(`Nose profile → ${e.target.value}`, 'info');
+};
+$('#wingStyle').onchange = e => {
+  state.params.wingStyle = e.target.value;
+  pushHistory(); queueRebuild();
+  log(`Wing planform → ${e.target.value}`, 'info');
+};
+$('#windowMode').onchange = e => {
+  state.params.windowMode = e.target.value;
+  pushHistory(); queueRebuild();
+  log(`Window treatment → ${e.target.value}`, 'info');
+};
+
+$('#ghostSkin').onchange = () => applyGhost();
+
+$('#secSlider').oninput = e => {
+  clipPlane.constant = parseFloat(e.target.value);
+  if(!clippingEnabled){
+    clippingEnabled = true;
+    $('#secVal').textContent = 'on';
+    applyClipping();
+  }
+};
+$('#qSlider').oninput = e => {
+  state.quality = parseFloat(e.target.value);
+  $('#qVal').textContent = state.quality.toFixed(1) + '×';
+};
+$('#qSlider').onchange = () => {
+  queueRebuild();
+  log('Rebuilding with quality ' + state.quality.toFixed(1) + '×', 'info');
+};
+
+/* component actions */
+$$('[data-cact]').forEach(b => {
+  b.onclick = () => {
+    const act = b.dataset.cact;
+    if(!modelRoot) return;
+    if(act === 'show') modelRoot.children.forEach(c => c.visible = true);
+    if(act === 'hide') modelRoot.children.forEach(c => c.visible = false);
+    if(act === 'isolate'){
+      const sel = state.selected;
+      if(!sel){ log('Select a component first', 'warn'); return; }
+      modelRoot.children.forEach(c => c.visible = (c.name === sel));
+    }
+    if(act === 'rename'){
+      const sel = state.selected;
+      if(!sel){ log('Select a component first', 'warn'); return; }
+      const g = modelRoot.children.find(c => c.name === sel);
+      const nn = prompt('Rename component:', sel);
+      if(nn && g){ g.name = nn; state.selected = nn; }
+    }
+    renderTree();
+  };
+});
+
+function duplicateComponent(){
+  if(!modelRoot || !state.selected){ log('Select a component first', 'warn'); return; }
+  const g = modelRoot.children.find(c => c.name === state.selected);
+  if(!g) return;
+  const clone = g.clone(true);
+  clone.name = g.name + ' Copy';
+  clone.position.x += state.params.length * 0.06;
+  modelRoot.add(clone);
+  renderTree();
+  log('Duplicated component: ' + g.name, 'ok');
+}
+function deleteComponent(){
+  if(!modelRoot || !state.selected){ log('Select a component first', 'warn'); return; }
+  const g = modelRoot.children.find(c => c.name === state.selected);
+  if(!g) return;
+  modelRoot.remove(g);
+  disposeGroup(g);
+  state.selected = null;
+  renderTree();
+  $('#selinfo').textContent = 'Nothing selected';
+  log('Component deleted', 'info');
+}
+
+/* ---------- local project persistence ---------- */
+function saveProject(){
+  const data = {
+    name: state.projectName,
+    aircraftId: state.aircraftId,
+    params: state.params,
+    revision: state.revision,
+    savedAt: new Date().toISOString()
+  };
+  const store = JSON.parse(localStorage.getItem('godson_projects') || '{}');
+  store[state.projectName] = data;
+  localStorage.setItem('godson_projects', JSON.stringify(store));
+  log(`Project "${state.projectName}" saved locally (rev ${state.revision}).`, 'ok');
+}
+function openProjectDialog(){
+  const store = JSON.parse(localStorage.getItem('godson_projects') || '{}');
+  const names = Object.keys(store);
+  if(!names.length){ log('No saved projects found in local storage.', 'warn'); return; }
+  const pick = prompt('Open project:\n' + names.map((n,i)=>`${i+1}. ${n}`).join('\n'), names[0]);
+  if(!pick) return;
+  const data = store[pick];
+  if(!data){ log('Project not found: ' + pick, 'err'); return; }
+  state.aircraftId = data.aircraftId;
+  state.params = data.params;
+  state.projectName = data.name;
+  state.revision = data.revision;
+  $('#home').style.display = 'none';
+  renderParams(); syncStyleSelects(); rebuild(true);
+  log(`Opened project "${data.name}" (rev ${data.revision}).`, 'ok');
+}
+
+function showAbout(){
+  log('──────────────────────────────────────────────', 'info');
+  log('GODSON AIRCRAFT CAD DESIGN STUDIO', 'info');
+  log('Reference-based / approximate aircraft models. Geometry is generated parametrically from published ' +
+      'dimensions. It is NOT manufacturer proprietary CAD data and is NOT validated for airworthiness, ' +
+      'structural analysis or manufacture.', 'warn');
+  log('Window openings are genuine holes cut through the outer fuselage skin; the inner skin, at a distance ' +
+      'equal to the skin-thickness parameter, is visible through them. Tick "Ghost outer skin" to see the ' +
+      'full thickness shell.', 'info');
+  log('STEP export writes genuine ISO-10303-21 B-rep solids (ADVANCED_FACE / CLOSED_SHELL / MANIFOLD_SOLID_BREP) ' +
+      'with planar facets. STL export writes standard binary/ASCII triangle meshes.', 'info');
+  log('Project storage in this build is browser-local (localStorage). A production deployment would add ' +
+      'PostgreSQL, server-side authentication and a queued CAD service.', 'info');
+  log('──────────────────────────────────────────────', 'info');
+}
+
+/* ---------- keyboard shortcuts ---------- */
+window.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  const k = e.key.toLowerCase();
+  if(k === 'f') fitView();
+  if(k === 'w'){ state.displayMode = state.displayMode === 'wireframe' ? 'solid' : 'wireframe'; applyDisplayMode(); }
+  if(k === 'm'){ state.measureMode = !state.measureMode; $('#measurebar').style.display = state.measureMode?'block':'none'; }
+  if(k === 'escape'){ $('#home').style.display='none'; clearMeasure(); }
+  if((e.ctrlKey||e.metaKey) && k === 'z'){ e.preventDefault(); undo(); }
+  if((e.ctrlKey||e.metaKey) && k === 'y'){ e.preventDefault(); redo(); }
+});
+
+/* =========================================================
+   13. BOOT
+   ========================================================= */
+renderHome();
+renderLibrary();
+state.params = JSON.parse(JSON.stringify(DB[0].params));
+pushHistory();
+renderParams();
+syncStyleSelects();
+rebuild(true);
+log('GODSON Aircraft CAD Design Studio initialised.', 'ok');
+log(`Loaded default model: ${DB[0].name} (${DB[0].accuracy}).`, 'info');
+log('Type exact values into any parameter field, or drag the slider. ' +
+    'Use the Model Tree to select components and Export for STEP/STL.', 'info');
+</script>
+</body>
+</html>
